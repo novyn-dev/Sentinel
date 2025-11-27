@@ -8,5 +8,4 @@ clap = { version = "4.5.53", features = ["derive"] }
 fastbloom = "0.14.0"
 lief = "0.17.1"
 smartcore = "0.4.7"
-statrs = "0.18.0"
 walkdir = "2.5.0"

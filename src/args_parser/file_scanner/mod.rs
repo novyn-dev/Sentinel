@@ -1,8 +1,9 @@
 use crate::args_parser::Commands::ScanFile;
 use crate::args_parser::Args;
 use clap::Subcommand;
-use std::{env::home_dir, fs, io::{self, Read, Write}, path::PathBuf, process::Command, thread::sleep, time::Duration};
-use statrs::statistics::Statistics;
+use std::fs::File;
+use std::path::Path;
+use std::{env::home_dir, io::{self, Read}, path::PathBuf, process::Command};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Aggressiveness {
@@ -40,10 +41,10 @@ impl std::str::FromStr for Colorblindness {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "0" | "protanopia" => Ok(Self::Protanopia),
+            "protanopia" => Ok(Self::Protanopia),
             _ => Err(
                 format!("Invalid colorblindness: {s}.
-                    Use 0-0 or [protanopia]"))
+                    Use [Protanopia]"))
         }
     }
 }
@@ -104,16 +105,46 @@ impl FileScanner {
                 continue;
             }
 
-            if file_path.extension().and_then(|s| s.to_str()) == Some("exe") {
-                println!("Found: {:?}", file_path);
-
-                let _output = Command::new("python")
-                    .args(["model/predict.py", "--model-path", "model/model.json", "--filepath", file_path.to_str().unwrap()])
-                    .status()
-                    .expect("Couldn't run the code");
+            println!("Found: {:?}", file_path);
+            match check_file_signature(file_path) {
+                Some(FileSignature::Exe) => {
+                    let _output = Command::new("python")
+                        .args(["model/win32/predict.py", "--filepath", file_path.to_str().unwrap()])
+                        .status()
+                        .expect("Couldn't run the code");
+                }
+                Some(FileSignature::Elf) => {
+                    let _output = Command::new("python")
+                        .args(["model/elf/predict.py", "--filepath", file_path.to_str().unwrap()])
+                        .status()
+                        .expect("Couldn't run the code");
+                }
+                _ => continue
             }
         }
 
         Ok(())
     }
+}
+
+pub enum FileSignature {
+    Exe,
+    Elf,
+}
+
+fn check_file_signature(file_path: &Path) -> Option<FileSignature> {
+    let mut f = File::open(file_path).unwrap();
+    let mut magic = [0u8; 4];
+    f.read_exact(&mut magic).unwrap();
+    // ELF magic = 0x7F 'E' 'L' 'F'
+    if magic == [0x7F, b'E', b'L', b'F'] {
+        return Some(FileSignature::Elf);
+    }
+
+    // EXE magic = 'M' 'Z'
+    if magic[0..2] == [b'M', b'Z'] {
+        return Some(FileSignature::Exe);
+    }
+
+    None
 }
