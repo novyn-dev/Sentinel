@@ -4,12 +4,12 @@ use clap::Subcommand;
 use std::ffi::CString;
 use std::fs::File;
 use std::os::raw::c_char;
-use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
-use std::{env::home_dir, io::{self, Read}, path::PathBuf, process::Command};
+use std::{env::home_dir, io::{self, Read}, path::PathBuf};
 
 unsafe extern "C" {
     fn predict_malware_elf(filepath: *const c_char, model_path: *const c_char);
+    fn predict_malware_pe(filepath: *const c_char, model_path: *const c_char);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -116,12 +116,13 @@ impl FileScanner {
             let c_file_path = CString::new(file_path.to_str().unwrap()).unwrap();
             match check_file_signature(file_path) {
                 Some(FileSignature::Exe) => {
-                    // NOTE: Old way, which is basically summoning python itself-
-                    // let _output = Command::new("python")
-                    //     .args(["model/win32/predict.py", "--filepath", file_path.to_str().unwrap()])
-                    //     .status()
-                    //     .expect("Couldn't run the code");
-                    continue;
+                    let c_model_path = CString::new("model/exe/model.ubj").unwrap();
+                    unsafe {
+                        predict_malware_pe(
+                        c_file_path.as_ptr(),
+                        c_model_path.as_ptr(),
+                        );
+                    }
                 }
                 Some(FileSignature::Elf) => {
                     let c_model_path = CString::new("model/elf/model.ubj").unwrap();

@@ -5,8 +5,9 @@ extern crate cc;
 
 fn main() {
     cc::Build::new()
-        .file("./c_code/elf/predict.c")
-        .file("./c_code/helper.c")
+        .file("c_code/elf/predict.c")
+        .file("c_code/exe/predict.c")
+        .file("c_code/helper.c")
         .compile("predict");
 
     // rerun cuz i dont wanna call `cargo clean` everytime like a maniac
@@ -19,6 +20,12 @@ fn main() {
     // link xgboost
     println!("cargo:rustc-link-search=native=/usr/local/lib");
     println!("cargo:rustc-link-lib=dylib=xgboost");
+
+    // link LIEF
+    println!("cargo:rustc-link-lib=dylib=LIEF");
+
+    // link stdc++
+    println!("cargo:rustc-link-lib=dylib=stdc++");
 
     let bindings = bindgen::Builder::default()
         .header("./wrapper.h")

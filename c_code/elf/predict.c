@@ -16,7 +16,7 @@ typedef struct {
     int end;
 } Range;
 
-float* histogram(const unsigned char* data, size_t len, uint bins, Range range) {
+static float* histogram(const unsigned char* data, size_t len, uint bins, Range range) {
     float* freq = calloc(bins, sizeof(float));
     if (!freq) return NULL;
 
@@ -28,7 +28,7 @@ float* histogram(const unsigned char* data, size_t len, uint bins, Range range) 
     return freq;
 }
 
-float calculate_entropy(const unsigned char* data, size_t len) {
+static float calculate_entropy(const unsigned char* data, size_t len) {
     Range range = { 0, 256 };
     float* counts = histogram(data, len, 256, range);
 
@@ -44,7 +44,7 @@ float calculate_entropy(const unsigned char* data, size_t len) {
     return entropy;
 }
 
-float* calculate_byte_entropy(const unsigned char* data, uint data_len, uint block_size, int* out_size_entropies) {
+static float* calculate_byte_entropy(const unsigned char* data, uint data_len, uint block_size, int* out_size_entropies) {
     float* entropies = malloc(sizeof(float) * (data_len / block_size + 1));
     int size_entropies = 0;
 
@@ -62,7 +62,7 @@ float* calculate_byte_entropy(const unsigned char* data, uint data_len, uint blo
     return entropies;
 }
 
-char** extract_strings(const unsigned char* data, int data_len, int* out_count) {
+static char** extract_strings(const unsigned char* data, int data_len, int* out_count) {
     char** results = NULL;
     int count = 0;
     size_t i = 0;
@@ -94,7 +94,7 @@ char** extract_strings(const unsigned char* data, int data_len, int* out_count) 
     return results;
 }
 
-float* extract_features_from_file_elf(char* filepath) {
+static float* extract_features_from_file_elf(char* filepath) {
     float* result = malloc(sizeof(float) * 10); // 10 features
     size_t result_size = 0;
     int n_strings;
