@@ -1,7 +1,6 @@
 use std::io;
-
 use clap::Parser;
-use sentinel::args_parser::{file_scanner::FileScanner, Args};
+use rust_lib::args_parser::{file_scanner::FileScanner, Args};
 
 fn main() -> io::Result<()> {
     let args = Args::parse();

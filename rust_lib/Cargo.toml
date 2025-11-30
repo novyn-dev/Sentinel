@@ -6,3 +6,7 @@ edition = "2024"
 [lib]
 name = "rust_lib"
 path = "src/lib.rs"
+
+[dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
+walkdir = "2.5.0"

@@ -8,14 +8,10 @@ name = "sentinel_src"
 path = "src/main.rs"
 
 [dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
 rust_lib = { path = "./rust_lib/" }
 
 [build-dependencies]
 bindgen = "0.72.1"
 cc = "1.2.48"
 clang-sys = "1.8.1"
-clap = { version = "4.5.53", features = ["derive"] }
-fastbloom = "0.14.0"
-lief = "0.17.1"
-smartcore = "0.4.7"
-walkdir = "2.5.0"

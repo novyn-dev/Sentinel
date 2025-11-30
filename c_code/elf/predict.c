@@ -16,7 +16,7 @@ typedef struct {
     int end;
 } Range;
 
-float* histogram(unsigned char* data, size_t len, uint bins, Range range) {
+float* histogram(const unsigned char* data, size_t len, uint bins, Range range) {
     float* freq = calloc(bins, sizeof(float));
     if (!freq) return NULL;
 
@@ -28,7 +28,7 @@ float* histogram(unsigned char* data, size_t len, uint bins, Range range) {
     return freq;
 }
 
-float calculate_entropy(unsigned char* data, size_t len) {
+float calculate_entropy(const unsigned char* data, size_t len) {
     Range range = { 0, 256 };
     float* counts = histogram(data, len, 256, range);
 
@@ -36,7 +36,7 @@ float calculate_entropy(unsigned char* data, size_t len) {
     for (int i = 0; i < 256; i++) {
         if (counts[i] > 0) {
             float prob = (float)counts[i] / len;
-            entropy -= prob * log2(prob);
+            entropy -= prob * log2f(prob);
         }
     }
 
@@ -44,7 +44,7 @@ float calculate_entropy(unsigned char* data, size_t len) {
     return entropy;
 }
 
-float* calculate_byte_entropy(unsigned char* data, uint data_len, uint block_size, int* out_size_entropies) {
+float* calculate_byte_entropy(const unsigned char* data, uint data_len, uint block_size, int* out_size_entropies) {
     float* entropies = malloc(sizeof(float) * (data_len / block_size + 1));
     int size_entropies = 0;
 
@@ -94,7 +94,7 @@ char** extract_strings(const unsigned char* data, int data_len, int* out_count) 
     return results;
 }
 
-float* extract_features_from_file_elf(const unsigned char* filepath) {
+float* extract_features_from_file_elf(char* filepath) {
     float* result = malloc(sizeof(float) * 10); // 10 features
     size_t result_size = 0;
     int n_strings;
@@ -162,7 +162,7 @@ float* extract_features_from_file_elf(const unsigned char* filepath) {
     return result;
 }
 
-void predict_malware(const unsigned char* filepath, const unsigned char* model_path) {
+void predict_malware(char* filepath, char* model_path) {
     BoosterHandle booster;
     XGBoosterCreate(NULL, 0, &booster);
     XGBoosterLoadModel(booster, model_path);
@@ -192,8 +192,6 @@ void predict_malware(const unsigned char* filepath, const unsigned char* model_p
     } else {
         printf("It's not a malware\n");
     }
-    // printf("pred: %f\n", pred);
-
 
     XGBoosterFree(booster);
     XGDMatrixFree(features_mat);
@@ -201,13 +199,3 @@ void predict_malware(const unsigned char* filepath, const unsigned char* model_p
 }
 
 // this is only for testing purposes lol ;-;
-int main(int argc, char **argv) {
-    if (argc != 3) {
-        fprintf(stderr, "Incorrect usage. Use `test <filepath> <modelpath>`\n");
-        return 1;
-    }
-
-    predict_malware(argv[1], argv[2]);
-
-    return 0;
-}

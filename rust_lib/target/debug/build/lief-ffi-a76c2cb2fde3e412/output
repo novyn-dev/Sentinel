@@ -1,0 +1,10 @@
+Target:    x86_64-unknown-linux-gnu
+Arch:      x86_64
+OS:        linux
+Version:   cargo:0.17.1
+Cache dst: /home/zai/rust_projects/sentinel/rust_lib/target/debug/build/lief-ffi-a76c2cb2fde3e412/out/lief-rs
+Trying to download from https://github.com/lief-project/LIEF/releases/download/0.17.1/LIEF-rs-x86_64-unknown-linux-gnu.zip
+cargo:rustc-link-search=native=/home/zai/rust_projects/sentinel/rust_lib/target/debug/build/lief-ffi-a76c2cb2fde3e412/out/lief-rs/lib
+cargo:rustc-env=AUTOCXX_RS=/home/zai/rust_projects/sentinel/rust_lib/target/debug/build/lief-ffi-a76c2cb2fde3e412/out/lief-rs/rs
+cargo:rustc-link-lib=lief-sys
+cargo:rustc-link-lib=LIEF
