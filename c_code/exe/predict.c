@@ -193,7 +193,6 @@ void predict_malware_pe(char* filepath, char* model_path) {
     XGBoosterPredictFromDMatrix(booster, features_mat, config, &out_shape, &out_dim, &out_result);
 
     float pred = out_result[0];
-
     bool is_malware = pred > 0.099;
 
     if (is_malware == true) {
