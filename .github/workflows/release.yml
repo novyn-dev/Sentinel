@@ -41,7 +41,6 @@ jobs:
             toolchain: stable
             override: true
 
-
         - name: install deps
           run: rustup target add ${{ matrix.target }}
 
