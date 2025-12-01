@@ -194,14 +194,13 @@ void predict_malware_pe(char* filepath, char* model_path) {
 
     float pred = out_result[0];
 
-    bool is_malware = pred > 0.49 ? true : false;
+    bool is_malware = pred > 0.099;
 
     if (is_malware == true) {
         printf("It's a malware\n");
     } else {
         printf("It's not a malware\n");
     }
-    printf("pred: %2f\n", pred);
 
     XGBoosterFree(booster);
     XGDMatrixFree(features_mat);

@@ -185,7 +185,7 @@ void predict_malware_elf(char* filepath, char* model_path) {
     XGBoosterPredictFromDMatrix(booster, features_mat, config, &out_shape, &out_dim, &out_result);
 
     float pred = out_result[0];
-    bool is_malware = pred > 0.49 ? true : false;
+    bool is_malware = pred > 0.49;
 
     if (is_malware == true) {
         printf("It's a malware\n");
