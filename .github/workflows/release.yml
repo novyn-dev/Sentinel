@@ -16,6 +16,22 @@ jobs:
         steps:
         - uses: actions/checkout@v3
 
+        - name: install system deps
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y liblief-dev
+
+        - name: download and build xgboost c lib
+          run: |
+            git clone --recursive https://github.com/dmlc/xgboost.git
+            cd xgboost
+            mkdir build && cd build
+            cmake -S .. -B . -DUSE_CUDA=OFF -DBUILD_SHARED_LIB=ON
+            make -j$(nproc)
+            #
+            echo "export XGBOOST_ROOT=$(pwd)/.." >> $GITHUB_ENV
+            echo "export LD_LIBRARY_PATH=$(pwd)/../lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
         - name: clean old targets
           run: cargo clean
 
