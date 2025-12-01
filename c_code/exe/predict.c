@@ -170,7 +170,7 @@ static float* extract_features_from_file_pe(char* filepath) {
     return result;
 }
 
-void predict_malware_pe(char* filepath, char* model_path) {
+bool predict_malware_pe(char* filepath, char* model_path) {
     BoosterHandle booster;
     XGBoosterCreate(NULL, 0, &booster);
     XGBoosterLoadModel(booster, model_path);
@@ -195,15 +195,11 @@ void predict_malware_pe(char* filepath, char* model_path) {
     float pred = out_result[0];
     bool is_malware = pred > 0.099;
 
-    if (is_malware == true) {
-        printf("It's a malware\n");
-    } else {
-        printf("It's not a malware\n");
-    }
-
     XGBoosterFree(booster);
     XGDMatrixFree(features_mat);
     free(features);
+
+    return is_malware;
 }
 
 // this is only for testing purposes lol ;-;

@@ -9,8 +9,8 @@ use std::{env::home_dir, io::{self, Read}, path::PathBuf};
 
 #[link(name = "lief_wrapper")]
 unsafe extern "C" {
-    fn predict_malware_elf(filepath: *const c_char, model_path: *const c_char);
-    fn predict_malware_pe(filepath: *const c_char, model_path: *const c_char);
+    fn predict_malware_elf(filepath: *const c_char, model_path: *const c_char) -> bool;
+    fn predict_malware_pe(filepath: *const c_char, model_path: *const c_char) -> bool;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -95,6 +95,7 @@ impl FileScanner {
 
     pub fn scan_files(&self) -> io::Result<()> {
         println!("Scanning directory: {:?}", &self.file);
+        let mut malwares_count = 0;
         for entry in walkdir::WalkDir::new(&self.file).max_depth(3) {
             let entry = match entry {
                 Ok(file) => file,
@@ -113,30 +114,28 @@ impl FileScanner {
                 continue;
             }
 
-            println!("Found: {:?}", file_path);
             let c_file_path = CString::new(file_path.to_str().unwrap()).unwrap();
             match check_file_signature(file_path) {
                 Some(FileSignature::Exe) => {
                     let c_model_path = CString::new("model/exe/model.ubj").unwrap();
-                    unsafe {
-                        predict_malware_pe(
-                        c_file_path.as_ptr(),
-                        c_model_path.as_ptr(),
-                        );
-                    }
+                    let is_malware = unsafe {
+                        predict_malware_pe(c_file_path.as_ptr(), c_model_path.as_ptr())
+                    };
+                    handle_malware(file_path, is_malware, &mut malwares_count);
                 }
                 Some(FileSignature::Elf) => {
                     let c_model_path = CString::new("model/elf/model.ubj").unwrap();
-                    unsafe {
-                        predict_malware_elf(
-                        c_file_path.as_ptr(),
-                        c_model_path.as_ptr(),
-                        );
-                    }
+                    let is_malware = unsafe {
+                        predict_malware_elf( c_file_path.as_ptr(), c_model_path.as_ptr())
+                    };
+                    handle_malware(file_path, is_malware, &mut malwares_count);
                 }
                 _ => continue
             }
         }
+
+        println!("Scanning ended");
+        println!("Found {malwares_count} possible malwares.");
 
         Ok(())
     }
@@ -162,4 +161,11 @@ fn check_file_signature(file_path: &Path) -> Option<FileSignature> {
     }
 
     None
+}
+
+fn handle_malware<T: AsRef<Path>>(file_path: T, is_malware: bool, malwares_count: &mut usize) {
+    if is_malware {
+        println!("{:?} is a malware", file_path.as_ref());
+        *malwares_count += 1;
+    }
 }
