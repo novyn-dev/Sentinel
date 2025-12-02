@@ -24,6 +24,7 @@ jobs:
             sudo apt-get install libc6-dev -y
             sudo apt-get install libc6-dev:i386 gcc-multilib g++-multilib -y
             sudo apt-get install -y mingw-w64
+            sudo apt-get install -y gcc-aarch64-linux-gnu
 
         - name: download and build xgboost c lib
           run: |
