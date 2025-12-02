@@ -26,7 +26,7 @@ jobs:
             cd xgboost
             mkdir build && cd build
             cmake -S .. -B . -DUSE_CUDA=OFF -DBUILD_SHARED_LIB=ON
-            sudo cmake --build . --target install
+            sudo cmake --build . --target install -j$(nproc)
             #
             echo "export XGBOOST_ROOT=$(pwd)/.." >> $GITHUB_ENV
             echo "export LD_LIBRARY_PATH=$(pwd)/../lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
