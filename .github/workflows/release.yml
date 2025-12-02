@@ -37,9 +37,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential cmake wget unzip pkg-config
         sudo apt-get install -y mingw-w64
+
         # Only install ARM cross compilers for Linux targets
-        if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu"]]; then
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+        TARGET=${{ matrix.target }}
+        if [ "$TARGET" = "aarch64-unknown-linux-gnu" ]; then
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
         fi
 
     - name: Setup Rust
