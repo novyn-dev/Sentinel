@@ -132,9 +132,7 @@ jobs:
       env:
         CC: ${{ matrix.cc }}
         CXX: ${{ matrix.cxx }}
-        LIEF_WRAPPER_PATH: ${{ github.workspace }}/c_build
-        LIEF_LIB_PATH: ${{ github.workspace }}/LIEF/build/install/lib
-        LIEF_INCLUDE_PATH: ${{ github.workspace }}/LIEF/build/install/include
+        LIEF_WRAPPER_PATH: ${{ github.workspace }}/c_code/exe/
       run: cargo build --release --target ${{ matrix.target }}
 
     - name: Prepare artifacts
