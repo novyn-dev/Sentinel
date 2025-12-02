@@ -40,7 +40,7 @@ jobs:
             # Build LIEF
             mkdir build && cd build
             cmake -S .. -B . -DCMAKE_INSTALL_PREFIX=/usr/
-            cmake --build . --target install -j$(nproc)
+            sudo cmake --build . --target install -j$(nproc)
 
         - name: clean old targets
           run: cargo clean
