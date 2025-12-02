@@ -98,10 +98,10 @@ jobs:
         mkdir -p c_build
 
         TARGET=${{ matrix.target }}
-        if [[ "$TARGET" == *"windows"*  ]]; then
+        if [[ "$TARGET" == *"windows"* ]]; then
             LIB_EXT="dll"
         else
-            LIB_EXT="so
+            LIB_EXT="so"
         fi
         ${{ matrix.cc }} -fPIC -shared \
           -o c_build/liblief_wrapper.$LIB_EXT \
