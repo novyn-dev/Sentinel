@@ -23,6 +23,7 @@ jobs:
             sudo apt-get install build-essential -y
             sudo apt-get install libc6-dev -y
             sudo apt-get install libc6-dev:i386 gcc-multilib g++-multilib -y
+            sudo apt-get install -y mingw-w64
 
         - name: download and build xgboost c lib
           run: |
