@@ -44,7 +44,7 @@ jobs:
           build-essential \
           libc6-dev libc6-dev:i386 gcc-multilib g++-multilib \
           mingw-w64 \
-          gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          crossbuild-essential-arm64
 
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
