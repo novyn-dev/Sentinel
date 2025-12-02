@@ -6,7 +6,9 @@ on:
             - 'v*.*.*'
 
 jobs:
-    build:
+    release:
+        permissions:
+            contents: write
         runs-on: ubuntu-latest
         strategy:
             matrix:
