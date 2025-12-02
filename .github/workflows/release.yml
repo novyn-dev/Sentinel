@@ -36,15 +36,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install cross compilers
+    - name: Install system dependencies
       run: |
-        sudo dpkg --add-architecture i386
         sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          libc6-dev libc6-dev:i386 gcc-multilib g++-multilib \
-          mingw-w64 \
-          crossbuild-essential-arm64
+        sudo apt-get install -y build-essential cmake wget unzip pkg-config
+        sudo apt-get install -y mingw-w64
+        # Only install ARM cross compilers for Linux targets
+        if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" || "${{ matrix.target }}" == "aarch64-pc-windows-gnu" ]]; then
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+        fi
 
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
@@ -55,7 +55,6 @@ jobs:
     - name: Add Rust target
       run: rustup target add ${{ matrix.target }}
 
-    # Build XGBoost per target
     - name: Build XGBoost (C library)
       run: |
         git clone --recursive https://github.com/dmlc/xgboost.git
@@ -66,13 +65,11 @@ jobs:
           -DBUILD_SHARED_LIB=ON \
           -DCMAKE_C_COMPILER=${{ matrix.cc }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
-          -DCMAKE_SYSTEM_PROCESSOR=${{ matrix.target }} \
           -DCMAKE_INSTALL_PREFIX=$PWD/install
         cmake --build . --target install -j$(nproc)
       shell: bash
 
-    # Build LIEF per target
-    - name: Build LIEF
+    - name: Build LIEF (C library)
       run: |
         git clone https://github.com/lief-project/LIEF.git
         cd LIEF
@@ -82,13 +79,13 @@ jobs:
           -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
           -DCMAKE_INSTALL_PREFIX=$PWD/install
         cmake --build . --target install -j$(nproc)
+      shell: bash
 
-    # Build custom C wrapper (LIEF wrapper)
-    - name: Build lief_wrapper
+    - name: Build LIEF wrapper
       run: |
         mkdir -p c_build
         ${{ matrix.cc }} -fPIC -shared \
-          -o c_code/exe/liblief_wrapper.so \
+          -o c_build/liblief_wrapper.so \
           c_code/lief_wrapper.c \
           -I LIEF/build/install/include \
           -L LIEF/build/install/lib \
@@ -109,7 +106,7 @@ jobs:
       run: mkdir -p artifacts
 
     - name: Copy binary
-      run: cp target/${{ matrix.target }}/release/sentinel_src artifacts
+      run: cp target/${{ matrix.target }}/release/sentinel_src artifacts/
 
     - name: Generate SHA256 checksums
       run: |
