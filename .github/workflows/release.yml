@@ -19,6 +19,8 @@ jobs:
         - name: install system deps
           run: |
             sudo apt-get update
+            sudo apt-get install build-essential
+            sudo apt-get install libc6-dev
 
         - name: download and build xgboost c lib
           run: |
