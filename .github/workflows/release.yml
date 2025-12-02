@@ -18,9 +18,11 @@ jobs:
 
         - name: install system deps
           run: |
+            sudo dpkg --add-architecture i386
             sudo apt-get update
-            sudo apt-get install build-essential
-            sudo apt-get install libc6-dev
+            sudo apt-get install build-essential -y
+            sudo apt-get install libc6-dev -y
+            sudo apt-get install libc6-dev:i386 gcc-multilib g++-multilib -y
 
         - name: download and build xgboost c lib
           run: |
