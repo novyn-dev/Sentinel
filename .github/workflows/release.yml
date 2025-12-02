@@ -25,11 +25,8 @@ jobs:
             git clone --recursive https://github.com/dmlc/xgboost.git
             cd xgboost
             mkdir build && cd build
-            cmake -S .. -B . -DUSE_CUDA=OFF -DBUILD_SHARED_LIB=ON
+            cmake -S .. -B . -DUSE_CUDA=OFF -DBUILD_SHARED_LIB=ON -DCMAKE_INSTALL_PREFIX=/usr/
             sudo cmake --build . --target install -j$(nproc)
-            #
-            echo "export XGBOOST_ROOT=$(pwd)/.." >> $GITHUB_ENV
-            echo "export LD_LIBRARY_PATH=$(pwd)/../lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
         - name: download and build lief c lib
           run: |
@@ -42,13 +39,8 @@ jobs:
 
             # Build LIEF
             mkdir build && cd build
-            cmake -DCMAKE_INSTALL_PREFIX=$HOME/lief ..
+            cmake -S .. -B . -DCMAKE_INSTALL_PREFIX=/usr/
             cmake --build . --target install -j$(nproc)
-
-            # Export paths for CI
-            echo "export LIEF_ROOT=$HOME/lief" >> $GITHUB_ENV
-            echo "export LD_LIBRARY_PATH=$HOME/lief/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-            echo "export CMAKE_PREFIX_PATH=$HOME/lief:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
 
         - name: clean old targets
           run: cargo clean
