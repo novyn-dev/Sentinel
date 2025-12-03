@@ -22,12 +22,6 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             cc: gcc
             cxx: g++
-          - target: aarch64-unknown-linux-gnu
-            cc: aarch64-linux-gnu-gcc
-            cxx: aarch64-linux-gnu-g++
-          - target: x86_64-pc-windows-gnu
-            cc: x86_64-w64-mingw32-gcc
-            cxx: x86_64-w64-mingw32-g++
 
     steps:
     - uses: actions/checkout@v3
@@ -36,13 +30,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential cmake wget unzip pkg-config
-        sudo apt-get install -y mingw-w64 \
-                                mingw-w64-common \
-                                mingw-w64-tools \
-                                binutils-mingw-w64 \
-                                gcc-mingw-w64 \
-                                g++-mingw-w64 \
-                                mingw-w64-x86-64-dev
 
         # Only install ARM cross compilers for Linux targets
         TARGET=${{ matrix.target }}
