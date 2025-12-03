@@ -1,4 +1,6 @@
 pub mod file_scanner;
+pub mod unauthorized_changes_scanner;
+
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
@@ -30,18 +32,19 @@ use crate::args_parser::file_scanner::FileCommands;
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Commands>,
-
-    // #[arg(short, long)]
-    // platform: Platform,
 }
 
 #[derive(Subcommand, Clone)]
 pub enum Commands {
-    ScanFile {
+    ScanDir {
         #[arg(short, long)]
-        file: Option<PathBuf>,
+        dir: Option<PathBuf>,
 
         #[command(subcommand)]
         scan: Option<FileCommands>,
     },
+    CheckUnauthorizedChanges {
+        #[arg(short, long)]
+        path: Option<PathBuf>,
+    }
 }

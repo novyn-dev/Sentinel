@@ -1,4 +1,4 @@
-use crate::args_parser::Commands::ScanFile;
+use crate::args_parser::Commands::ScanDir;
 use crate::args_parser::Args;
 use clap::Subcommand;
 use std::ffi::CString;
@@ -82,7 +82,8 @@ impl FileScanner {
     pub fn new(args: Args) -> Self {
         let commands = args.clone().command.unwrap();
         let file = match commands {
-            ScanFile { file, .. } => file,
+            ScanDir { dir: file, .. } => file,
+            _ => panic!("How did you even get here..? Did you not use scan-dir")
         }.unwrap_or(home_dir().expect("Couldn't get the home directory"));
 
         Self {
