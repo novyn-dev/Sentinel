@@ -25,9 +25,14 @@ impl UnauthorizedChangesScanner {
     }
 
     pub fn from_db(conn: Connection) -> Self {
-        let hash = conn.execute("SELECT prev_hash FROM passwd_checks", []).unwrap();
+        let hash: String = {
+            let mut stmt = conn.prepare("SELECT prev_hash FROM passwd_checks ORDER BY rowid DESC LIMIT 1").unwrap();
+            stmt.query_one([], |row| {
+                row.get(0)
+            }).unwrap()
+        };
 
-        println!("{}", hash);
+        // println!("{}", hash);
         Self {
             hash: Some(hash.to_string()),
             prev_hash: None,
@@ -38,13 +43,13 @@ impl UnauthorizedChangesScanner {
     }
 
     pub fn scan_unauthorized_checks(&mut self) -> std::io::Result<()> {
-        let is_changed = self.check_for_changes("/etc/passwd")?;
+        self.check_for_changes("/etc/passwd")?;
 
-        if is_changed {
+        if self.changed {
             println!("Something changed in /etc/passwd");
         }
 
-        println!("{is_changed} {:?}", self.hash.clone());
+        // println!("{} {:?}", self.changed, self.hash.clone());
         self.store_check(&self.conn, self.hash.clone().unwrap(), self.changed).unwrap();
         Ok(())
     }
@@ -61,30 +66,17 @@ impl UnauthorizedChangesScanner {
         Ok(hash)
     }
 
-    fn check_for_changes(&mut self, path: &str) -> std::io::Result<bool> {
+    fn check_for_changes(&mut self, path: &str) -> std::io::Result<()> {
         let current_hash = self.hash_passwd_file(path)?;
 
-        if let Some(prev) = &self.prev_hash {
-            self.changed = current_hash != *prev;
+        if let Some(prev_hash) = &self.hash {
+            self.changed = current_hash != *prev_hash;
         }
 
         self.prev_hash = self.hash.clone();
         self.hash = Some(current_hash);
         self.last_checked = Some(Local::now());
 
-        Ok(self.changed)
-    }
-
-    fn init_db(&self, conn: &Connection) -> Result<()> {
-        conn.execute(
-        "CREATE TABLE IF NOT EXISTS passwd_checks (
-                id INTEGER PRIMARY KEY,
-                timestamp TEXT NOT NULL,
-                prev_hash TEXT NOT NULL,
-                changed BOOLEAN NOT NULL
-            )",
-            []
-        )?;
         Ok(())
     }
 
