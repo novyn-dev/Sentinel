@@ -12,11 +12,18 @@ fn main() {
     let lief_wrapper_path = std::env::var("LIEF_WRAPPER_PATH")
         .unwrap_or_else(|_| "c_code/exe/".to_string());
 
+    // same for xgboost
+    let xgboost_lib = std::env::var("XGBOOST_LIB_PATH")
+        .unwrap_or_else(|_| "/usr/lib/".to_string());
+    let xgboost_include = std::env::var("XGBOOST_INCLUDE_PATH")
+        .unwrap_or_else(|_| "/usr/include/".to_string());
+
     cc::Build::new()
         .file("c_code/elf/predict.c")
         .file("c_code/exe/predict.c")
         .file("c_code/helper.c")
         .include(&lief_include)
+        .include(&xgboost_include)
         .compile("predict");
 
     // rerun cuz i dont wanna call `cargo clean` everytime like a maniac
@@ -27,11 +34,12 @@ fn main() {
     println!("cargo:rustc-link-lib=static=predict");
 
     // link xgboost
-    println!("cargo:rustc-link-search=native=/usr/local/lib");
+    println!("cargo:rustc-link-search=native={xgboost_lib}");
     println!("cargo:rustc-link-lib=dylib=xgboost");
 
     // link LIEF
-    println!("cargo:rustc-link-lib=dylib={lief_lib}");
+    println!("cargo:rustc-link-search=native={lief_lib}");
+    println!("cargo:rustc-link-lib=dylib=LIEF");
 
     // link stdc++
     println!("cargo:rustc-link-lib=dylib=stdc++");

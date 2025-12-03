@@ -129,6 +129,8 @@ jobs:
         LIEF_WRAPPER_PATH: ${{ github.workspace }}/c_code/exe/
         LIEF_INCLUDE_PATH: ${{ github.workspace }}/LIEF/build/install/include
         LIEF_LIB_PATH: ${{ github.workspace }}/LIEF/build/install/lib
+        XGBOOST_INCLUDE_PATH: ${{ github.workspace }}/xgboost/build/install/include
+        XGBOOST_LIB_PATH: ${{ github.workspace }}/xgboost/build/install/lib
       run: cargo build --release --target ${{ matrix.target }}
 
     - name: Prepare artifacts
