@@ -1,6 +1,6 @@
 use std::{fs::File, io::Read, time::SystemTime};
 use chrono::{DateTime, Local, NaiveDateTime};
-use rusqlite::{Connection, Result};
+use rusqlite::{Connection, OptionalExtension, Result};
 use sha2::{Digest, Sha256};
 
 pub struct UnauthorizedChangesScanner {
@@ -25,21 +25,35 @@ impl UnauthorizedChangesScanner {
     }
 
     pub fn from_db(conn: Connection) -> Self {
-        let hash: String = {
+        let prev_hash: Option<String> = {
             let mut stmt = conn.prepare("SELECT prev_hash FROM passwd_checks ORDER BY rowid DESC LIMIT 1").unwrap();
             stmt.query_one([], |row| {
                 row.get(0)
-            }).unwrap()
+            }).optional().unwrap()
         };
 
-        // println!("{}", hash);
-        Self {
-            hash: Some(hash.to_string()),
-            prev_hash: None,
-            last_checked: Some(Local::now()),
-            changed: false,
-            conn,
+        match prev_hash {
+            Some(hash) => {
+                Self {
+                    hash: Some(hash.to_string()),
+                    prev_hash: None,
+                    last_checked: Some(Local::now()),
+                    changed: false,
+                    conn,
+                }
+            }
+            None => {
+                Self {
+                    hash: None,
+                    prev_hash: None,
+                    last_checked: None,
+                    changed: false,
+                    conn,
+                }
+            }
         }
+
+        // println!("{}", hash);
     }
 
     pub fn scan_unauthorized_checks(&mut self) -> std::io::Result<()> {
@@ -50,7 +64,7 @@ impl UnauthorizedChangesScanner {
         }
 
         // println!("{} {:?}", self.changed, self.hash.clone());
-        self.store_check(&self.conn, self.hash.clone().unwrap(), self.changed).unwrap();
+        self.store_check().unwrap();
         Ok(())
     }
 
@@ -80,14 +94,14 @@ impl UnauthorizedChangesScanner {
         Ok(())
     }
 
-    fn store_check<T: AsRef<str>>(&self, conn: &Connection, hash: T, changed: bool) -> Result<()> {
-        conn.execute(
+    fn store_check(&self) -> Result<()> {
+        self.conn.execute(
         "INSERT INTO passwd_checks (timestamp, prev_hash, changed)
         VALUES ($1, $2, $3)", 
         [
                 chrono::Local::now().to_rfc3339(),
-                hash.as_ref().to_string(),
-                changed.to_string(),
+                self.hash.clone().unwrap(),
+                self.changed.to_string(),
             ]
         )?;
         Ok(())

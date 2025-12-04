@@ -1,5 +1,6 @@
-use std::io;
+use std::{io, panic, process};
 use clap::Parser;
+use colored::Colorize;
 use rust_lib::args_parser::unauthorized_changes_scanner::UnauthorizedChangesScanner;
 use rust_lib::args_parser::{file_scanner::FileScanner, Args};
 use rust_lib::args_parser::Commands::{ScanDir, CheckUnauthorizedChanges};
@@ -19,6 +20,16 @@ fn init_db(conn: &Connection) -> Result<()> {
 }
 
 fn main() -> io::Result<()> {
+    panic::set_hook(Box::new(|panic_info| {
+        let location = panic_info.location();
+        if let Some(location) = location {
+            eprintln!("{} {}\nat file {}\nat line {}", "[ERROR]".red().bold(), panic_info.payload_as_str().unwrap(), location.file(), location.line());
+        } else {
+            eprintln!("{} {}", "[ERROR]".red().bold(), panic_info.payload_as_str().unwrap());
+        }
+        process::exit(1);
+    }));
+
     let args = Args::parse();
 
     let conn = Connection::open("/usr/local/share/sentinel/passwd.db").unwrap();
