@@ -20,22 +20,21 @@ fn init_db(conn: &Connection) -> Result<()> {
 
 fn main() -> io::Result<()> {
     let args = Args::parse();
-    // checks
-    if args.command.is_none() {
-        eprintln!("Error occured! please enter a command");
-    }
 
-    let conn = Connection::open("db/passwd.db").unwrap();
+    let conn = Connection::open("/usr/local/share/sentinel/passwd.db").unwrap();
     init_db(&conn).expect("Couldn't initialize database");
 
-    match args.clone().command.unwrap() {
-        ScanDir { .. } => {
+    match args.clone().command {
+        Some(ScanDir { .. }) => {
             let file_scanner = FileScanner::new(args.clone());
             file_scanner.scan_files().unwrap();
         }
-        CheckUnauthorizedChanges { .. } => {
+        Some(CheckUnauthorizedChanges { .. }) => {
             let mut unauthorized_changes_scanner = UnauthorizedChangesScanner::from_db(conn);
             unauthorized_changes_scanner.scan_unauthorized_checks().unwrap();
+        }
+        None => {
+            panic!("Please enter a command")
         }
     }
 
