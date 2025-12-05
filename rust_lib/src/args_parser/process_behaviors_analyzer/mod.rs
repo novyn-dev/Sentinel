@@ -79,11 +79,9 @@ impl ProcessBehaviorsAnalyzer {
             let mem_usage = (vmrss as f64 / total_mem as f64) * 100.0;
 
             if cpu_usage >= 20.0 || mem_usage >= 20.0 {
-                self.exceptions.iter().for_each(|exception| {
-                    if proc_name.to_ascii_lowercase() != **exception {
-                        println!("[{}, {}]\nCPU USAGE: {:.2}%\nMEMORY USAGE: {:.2}%", pid.to_string().bold(), proc_name, cpu_usage, mem_usage);
-                    }
-                });
+                if !self.exceptions.iter().any(|e| proc_name.eq_ignore_ascii_case(e)) {
+                    println!("[{}, {}]\nCPU USAGE: {:.2}%\nMEMORY USAGE: {:.2}%", pid.to_string().bold(), proc_name, cpu_usage, mem_usage);
+                };
             }
         }
     }
