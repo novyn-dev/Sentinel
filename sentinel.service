@@ -1,10 +1,10 @@
 [Unit]
-Description=Sentinel
+Description=Sentinel daemon
 After=network.target
 
 [Service]
 Environment=LD_LIBRARY_PATH=/usr/local/lib/
-ExecStart=/usr/local/bin/sentinel
+ExecStart=/usr/local/bin/sentinel check-unauthorized-changes
 Restart=always
 Environment=RUST_LOG=info
 PIDFile=/run/sentinel.pid
