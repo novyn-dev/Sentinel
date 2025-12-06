@@ -3,9 +3,10 @@ use std::{io, panic, process};
 use clap::Parser;
 use colored::Colorize;
 use rust_lib::args_parser::process_behaviors_analyzer::ProcessBehaviorsAnalyzer;
+use rust_lib::args_parser::quarantine::Quarantinizer;
 use rust_lib::args_parser::unauthorized_changes_scanner::UnauthorizedChangesScanner;
 use rust_lib::args_parser::{file_scanner::FileScanner, Args};
-use rust_lib::args_parser::Commands::{ScanDir, CheckUnauthorizedChanges, AnalyzeProcessBehaviors};
+use rust_lib::args_parser::Commands::{ScanDir, CheckUnauthorizedChanges, AnalyzeProcessBehaviors, Quarantine};
 use rusqlite::{Connection, Result};
 
 fn init_db(conn: &Connection) -> Result<()> {
@@ -58,10 +59,26 @@ fn main() -> io::Result<()> {
                 process_behaviors_analyzer.analyze();
             }
         }
+        Some(Quarantine { .. } ) => {
+            let mut quarantinizer = Quarantinizer::new();
+
+            loop {
+                std::thread::sleep(Duration::from_secs(1));
+                quarantinizer.quarantine();
+            }
+        }
         None => {
             panic!("Please enter a command")
         }
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
 }

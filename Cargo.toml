@@ -7,6 +7,9 @@ edition = "2024"
 name = "sentinel"
 path = "src/main.rs"
 
+[lib]
+path = "rust_lib/src/lib.rs"
+
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 hex = "0.4.3"
@@ -14,6 +17,20 @@ rusqlite = "0.37.0"
 rust_lib = { path = "./rust_lib/" }
 sha2 = "0.10.9"
 colored = "3.0.0"
+# clap = { version = "4.5.53", features = ["derive"] }
+walkdir = "2.5.0"
+# rusqlite = "0.37.0"
+# sha2 = "0.11.0-rc.3"
+# hex = "0.4.3"
+chrono = "0.4.42"
+goblin = "0.10.4"
+sysinfo = "0.37.2"
+procfs = "0.18.0"
+system-uptime = "0.1.2"
+libc = "0.2.178"
+num_cpus = "1.17.0"
+# colored = "3.0.0"
+
 
 [build-dependencies]
 bindgen = "0.72.1"

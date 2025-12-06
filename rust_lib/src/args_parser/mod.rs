@@ -1,6 +1,7 @@
 pub mod file_scanner;
 pub mod unauthorized_changes_scanner;
 pub mod process_behaviors_analyzer;
+pub mod quarantine;
 
 use std::path::PathBuf;
 
@@ -52,4 +53,8 @@ pub enum Commands {
         path: Option<PathBuf>,
     },
     AnalyzeProcessBehaviors,
+    Quarantine {
+        #[arg(short, long)]
+        executable_file: PathBuf
+    },
 }
