@@ -1,4 +1,4 @@
-use std::{env::home_dir, fs::{self, File}, io::{self, ErrorKind}, path::{Path, PathBuf}};
+use std::{env::home_dir, fs::{self, File}, io::{self, ErrorKind}, os::unix::fs::PermissionsExt, path::{Path, PathBuf}};
 use chrono::{DateTime, Local};
 
 pub struct QuarantinedFile {
@@ -30,17 +30,17 @@ impl Quarantinizer {
     }
 
     pub fn quarantine(&mut self) -> Result<(), String> {
-        for file in &mut self.quarantined_files {
-            let original_file_name = Path::new(&file.original_path)
+        for quarantined_file in &mut self.quarantined_files {
+            let original_file_name = Path::new(&quarantined_file.original_path)
                 .file_name()
                 .expect("Invalid file path")
                 .to_string_lossy();
-            let quarantined_file_name = match file.quarantined_date {
+            let quarantined_file_name = match quarantined_file.quarantined_date {
                 Some(date) => &format!("{}_{:?}", original_file_name, date),
-                None => &file.original_path.to_string(),
+                None => &quarantined_file.original_path.to_string(),
             };
 
-            let quarantine_path = match &file.quarantine_path {
+            let quarantine_path = match &quarantined_file.quarantine_path {
                 Some(path) => path,
                 None => quarantined_file_name,
             };
@@ -50,15 +50,18 @@ impl Quarantinizer {
                 let full_quarantine_file_path = &self.quarantine_dir.join(quarantined_file_name);
 
                 let file = match File::create_new(full_quarantine_file_path) {
-                    Ok(captured_file) => {
-                        file.quarantine_path = Some(full_quarantine_file_path.to_string_lossy().to_string());
-                        captured_file
-                    }
+                    Ok(captured_file) => captured_file,
                     Err(e) if e.kind() == ErrorKind::AlreadyExists => continue,
-                    Err(e) => {
-                        return Err(format!("Couldn't make file `{}`\nError: {e}", quarantined_file_name));
-                    }
+                    Err(e) => return Err(format!("Couldn't make file `{}`\nError: {e}", quarantined_file_name))
                 };
+
+                quarantined_file.quarantine_path = Some(full_quarantine_file_path.to_string_lossy().to_string());
+                let mut perm = match file.metadata() {
+                    Ok(metadata) => metadata.permissions(),
+                    Err(e) => return Err(format!("Couldn't get the metadata of `{:?}`\nError: {e}", full_quarantine_file_path)),
+                };
+                perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
+                fs::set_permissions(full_quarantine_file_path, perm).unwrap();
             }
         }
 
@@ -67,6 +70,9 @@ impl Quarantinizer {
 
     pub fn push_quarantined(&mut self, quarantined: QuarantinedFile) -> Result<(), String> {
         self.quarantined_files.push(quarantined);
+
+        // quarantine again
+        self.quarantine()?;
         Ok(())
     }
 }

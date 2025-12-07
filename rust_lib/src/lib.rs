@@ -2,7 +2,7 @@ pub mod args_parser;
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{fs, io::ErrorKind, path::PathBuf};
     use chrono::{DateTime, Local};
 
     use crate::args_parser::quarantine::{QuarantinedFile, Quarantinizer};
@@ -32,6 +32,12 @@ mod tests {
             }
         );
         assert!(result.is_ok(), "Couldn't push a file for quarantine");
+
+        let file = quarantinizer.quarantined_files.first()
+            .expect("No quarantined files found");
+        let path = file.quarantine_path.as_ref()
+            .expect("File has no quarantine path");
+        assert!(path.starts_with("/home/zai/.sentinel_quarantine/"));
 
         let result = quarantinizer.quarantine();
         assert!(result.is_ok(), "Couldn't quarantine");
