@@ -1,15 +1,16 @@
 use std::time::Duration;
 use std::{io, panic, process};
+use chrono::Local;
 use clap::Parser;
 use colored::Colorize;
 use rust_lib::args_parser::process_behaviors_analyzer::ProcessBehaviorsAnalyzer;
-use rust_lib::args_parser::quarantine::Quarantinizer;
+use rust_lib::args_parser::quarantine::{QuarantinedFile, Quarantinizer};
 use rust_lib::args_parser::unauthorized_changes_scanner::UnauthorizedChangesScanner;
 use rust_lib::args_parser::{file_scanner::FileScanner, Args};
 use rust_lib::args_parser::Commands::{ScanDir, CheckUnauthorizedChanges, AnalyzeProcessBehaviors, Quarantine};
 use rusqlite::{Connection, Result};
 
-fn init_db(conn: &Connection) -> Result<()> {
+fn init_db_passwd(conn: &Connection) -> Result<()> {
     conn.execute(
     "CREATE TABLE IF NOT EXISTS passwd_checks (
             id INTEGER PRIMARY KEY,
@@ -17,6 +18,20 @@ fn init_db(conn: &Connection) -> Result<()> {
             prev_hash TEXT NOT NULL,
             changed BOOLEAN NOT NULL
         )",
+        []
+    )?;
+    Ok(())
+}
+
+fn init_db_quarantine(conn: &Connection) -> Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS quarantined_files (
+                id INTEGER PRIMARY KEY,
+                original_path TEXT NOT NULL,
+                quarantine_path TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                quarantined_date TEXT NOT NULL
+            )",
         []
     )?;
     Ok(())
@@ -35,8 +50,8 @@ fn main() -> io::Result<()> {
 
     let args = Args::parse();
 
-    let conn = Connection::open("/usr/local/share/sentinel/passwd.db").unwrap();
-    init_db(&conn).expect("Couldn't initialize database");
+    let conn_passwd = Connection::open("/usr/local/share/sentinel/passwd.db").unwrap();
+    init_db_passwd(&conn_passwd).expect("Couldn't initialize database");
 
     match args.clone().command {
         Some(ScanDir { .. }) => {
@@ -44,7 +59,7 @@ fn main() -> io::Result<()> {
             file_scanner.scan_files().unwrap();
         }
         Some(CheckUnauthorizedChanges { .. }) => {
-            let mut unauthorized_changes_scanner = UnauthorizedChangesScanner::from_db(conn);
+            let mut unauthorized_changes_scanner = UnauthorizedChangesScanner::from_db(conn_passwd);
 
             loop {
                 unauthorized_changes_scanner.scan_unauthorized_checks().unwrap();
@@ -59,13 +74,17 @@ fn main() -> io::Result<()> {
                 process_behaviors_analyzer.analyze();
             }
         }
-        Some(Quarantine { .. } ) => {
+        Some(Quarantine { executable_file } ) => {
             let mut quarantinizer = Quarantinizer::new();
 
-            loop {
-                std::thread::sleep(Duration::from_secs(1));
-                quarantinizer.quarantine();
-            }
+            quarantinizer.push_quarantined(
+                QuarantinedFile {
+                    original_path: executable_file.to_str().unwrap().to_string(),
+                    quarantine_path: None,
+                    reason: "No reason".to_string(),
+                    quarantined_date: Some(Local::now()),
+                }
+            ).unwrap();
         }
         None => {
             panic!("Please enter a command")

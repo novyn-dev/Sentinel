@@ -1,5 +1,6 @@
 use std::{env::home_dir, fs::{self, File}, io::ErrorKind, os::unix::fs::PermissionsExt, path::{Path, PathBuf}};
 use chrono::{DateTime, Local};
+use rusqlite::Connection;
 
 pub struct QuarantinedFile {
     pub original_path: String,
@@ -16,7 +17,6 @@ pub struct Quarantinizer {
 #[allow(clippy::new_without_default)]
 impl Quarantinizer {
     pub fn new() -> Self {
-
         let quarantine_dir = home_dir()
             .map(|h| h.join(".sentinel_quarantine"))
             .ok_or("Couldn't determine home directory")
@@ -27,6 +27,32 @@ impl Quarantinizer {
             quarantine_dir,
             quarantined_files: vec![],
         }
+    }
+
+    pub fn from_db(conn: Connection) -> rusqlite::Result<Self, rusqlite::Error> {
+        let quarantine_dir = home_dir()
+            .map(|h| h.join(".sentinel_quarantine"))
+            .ok_or("Couldn't determine home directory")
+            .unwrap();
+        fs::create_dir_all(&quarantine_dir)
+            .unwrap_or_else(|e| println!("Couldn't create {}\nError {e}", quarantine_dir.to_string_lossy()));
+
+        let mut stmt = conn.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files")?;
+        let quarantined_files = stmt.query_map([], |row| {
+            Ok(QuarantinedFile {
+                original_path: row.get(1)?,
+                quarantine_path: row.get(2).ok(),
+                reason: row.get(3)?,
+                quarantined_date: None,
+            })
+        })?
+        .filter_map(|result| result.ok())
+        .collect::<Vec<QuarantinedFile>>();
+
+        Ok(Self {
+            quarantine_dir,
+            quarantined_files,
+        })
     }
 
     pub fn quarantine(&mut self) -> Result<(), String> {
