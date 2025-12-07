@@ -10,6 +10,10 @@ use std::path::Path;
 use std::{env::home_dir, io::{self}, path::PathBuf};
 
 #[link(name = "lief_wrapper")]
+#[link(name = "predict")]
+#[link(name = "xgboost")]
+#[link(name = "LIEF")]
+#[link(name = "stdc++")]
 unsafe extern "C" {
     fn predict_malware_elf(filepath: *const c_char, model_path: *const c_char, show_pred: bool) -> bool;
     fn predict_malware_pe(filepath: *const c_char, model_path: *const c_char, show_pred: bool) -> bool;
