@@ -45,7 +45,8 @@ impl Quarantinizer {
                 None => quarantined_file_name,
             };
 
-            if *quarantine_path != self.quarantine_dir {
+            let is_quarantined = quarantined_file.quarantine_path.is_some();
+            if !is_quarantined {
                 // put file in /home/user/.sentinel_quarantine/ for quarantine
                 let full_quarantine_file_path = &self.quarantine_dir.join(quarantined_file_name);
 
@@ -66,6 +67,8 @@ impl Quarantinizer {
                 fs::set_permissions(full_quarantine_file_path, perm).unwrap();
 
                 println!("Locked {:?} with perms 0o000", full_quarantine_file_path);
+            } else {
+                eprintln!("Already quarantined");
             }
         }
 
