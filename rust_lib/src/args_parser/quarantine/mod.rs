@@ -61,7 +61,7 @@ impl Quarantinizer {
                 fs::set_permissions(full_quarantine_file_path, perm)
                     .map_err(|e| format!("Couldn't set permissions to {:?}\nError {e}", full_quarantine_file_path))?;
 
-                println!("Locked {:?} with perms 0o000", full_quarantine_file_path);
+                println!("Quarantined {:?}", full_quarantine_file_path);
             } else {
                 eprintln!("Already quarantined");
             }
