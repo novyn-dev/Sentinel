@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn quarantine_init_db_test() {
-        let conn = Connection::open("/usr/local/share/sentinel/quarantined_files.db").unwrap();
+        let conn = Connection::open("/usr/local/share/sentinel/dummy/quarantined_files.db").unwrap();
         init_db_quarantine(&conn).unwrap();
 
         let mut quarantinier = Quarantinizer::from_db(conn).unwrap();

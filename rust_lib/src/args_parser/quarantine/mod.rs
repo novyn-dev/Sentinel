@@ -11,7 +11,9 @@ pub struct QuarantinedFile {
 
 pub struct Quarantinizer {
     pub quarantine_dir: PathBuf,
-    pub quarantined_files: Vec<QuarantinedFile>
+    pub quarantined_files: Vec<QuarantinedFile>,
+
+    db: Connection,
 }
 
 #[allow(clippy::new_without_default)]
@@ -26,6 +28,7 @@ impl Quarantinizer {
         Self {
             quarantine_dir,
             quarantined_files: vec![],
+            db: Connection::open_in_memory().unwrap(),
         }
     }
 
@@ -37,21 +40,24 @@ impl Quarantinizer {
         fs::create_dir_all(&quarantine_dir)
             .unwrap_or_else(|e| println!("Couldn't create {}\nError {e}", quarantine_dir.to_string_lossy()));
 
-        let mut stmt = conn.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files")?;
-        let quarantined_files = stmt.query_map([], |row| {
-            Ok(QuarantinedFile {
-                original_path: row.get(1)?,
-                quarantine_path: row.get(2).ok(),
-                reason: row.get(3)?,
-                quarantined_date: None,
-            })
-        })?
-        .filter_map(|result| result.ok())
-        .collect::<Vec<QuarantinedFile>>();
+        let quarantined_files = {
+            let mut stmt = conn.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files")?;
+            stmt.query_map([], |row| {
+                Ok(QuarantinedFile {
+                    original_path: row.get(1)?,
+                    quarantine_path: row.get(2).ok(),
+                    reason: row.get(3)?,
+                    quarantined_date: None,
+                })
+            })?
+            .filter_map(|result| result.ok())
+            .collect::<Vec<QuarantinedFile>>()
+        };
 
         Ok(Self {
             quarantine_dir,
             quarantined_files,
+            db: conn,
         })
     }
 

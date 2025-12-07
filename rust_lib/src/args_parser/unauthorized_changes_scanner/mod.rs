@@ -9,7 +9,7 @@ pub struct UnauthorizedChangesScanner {
     last_checked: Option<DateTime<Local>>,
     changed: bool,
 
-    conn: Connection,
+    db: Connection,
 }
 
 #[allow(clippy::new_without_default)]
@@ -20,7 +20,7 @@ impl UnauthorizedChangesScanner {
             prev_hash: None,
             last_checked: None,
             changed: false,
-            conn: Connection::open_in_memory().unwrap(),
+            db: Connection::open_in_memory().unwrap(),
         }
     }
 
@@ -39,7 +39,7 @@ impl UnauthorizedChangesScanner {
                     prev_hash: None,
                     last_checked: Some(Local::now()),
                     changed: false,
-                    conn,
+                    db: conn,
                 }
             }
             None => {
@@ -48,7 +48,7 @@ impl UnauthorizedChangesScanner {
                     prev_hash: None,
                     last_checked: None,
                     changed: false,
-                    conn,
+                    db: conn,
                 }
             }
         }
@@ -95,7 +95,7 @@ impl UnauthorizedChangesScanner {
     }
 
     fn store_check(&self) -> Result<()> {
-        self.conn.execute(
+        self.db.execute(
         "INSERT INTO passwd_checks (timestamp, prev_hash, changed)
         VALUES ($1, $2, $3)", 
         [
