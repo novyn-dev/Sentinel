@@ -2,6 +2,7 @@ use std::{env::home_dir, fs::{self, File}, io::ErrorKind, os::unix::fs::Permissi
 use chrono::{DateTime, Local};
 use rusqlite::Connection;
 
+#[derive(Clone)]
 pub struct QuarantinedFile {
     pub original_path: String,
     pub quarantine_path: Option<String>,
@@ -13,7 +14,7 @@ pub struct Quarantinizer {
     pub quarantine_dir: PathBuf,
     pub quarantined_files: Vec<QuarantinedFile>,
 
-    db: Connection,
+    db: Option<Connection>,
 }
 
 #[allow(clippy::new_without_default)]
@@ -28,7 +29,7 @@ impl Quarantinizer {
         Self {
             quarantine_dir,
             quarantined_files: vec![],
-            db: Connection::open_in_memory().unwrap(),
+            db: None,
         }
     }
 
@@ -57,7 +58,7 @@ impl Quarantinizer {
         Ok(Self {
             quarantine_dir,
             quarantined_files,
-            db: conn,
+            db: Some(conn),
         })
     }
 
@@ -99,6 +100,11 @@ impl Quarantinizer {
             }
         }
 
+        // after all that quaranting, store it to the db
+        for quarantined_file in &self.quarantined_files {
+            self.store_quarantined(quarantined_file).unwrap();
+        }
+
         Ok(())
     }
 
@@ -107,6 +113,24 @@ impl Quarantinizer {
 
         // quarantine again
         self.quarantine()?;
+        Ok(())
+    }
+
+    fn store_quarantined(&self, quarantined: &QuarantinedFile) -> rusqlite::Result<()> {
+        if let Some(db) = &self.db {
+            let quarantined_clone  = quarantined.clone();
+            db.execute(
+                "INSERT INTO quarantined_files (original_path, quarantine_path, reason, quarantined_date)
+                        VALUES ($1, $2, $3, $4)",
+                [
+                    quarantined_clone.original_path,
+                    quarantined_clone.quarantine_path.unwrap(),
+                    quarantined_clone.reason,
+                    quarantined_clone.quarantined_date.unwrap_or_default().to_string()
+                ]
+            )?;
+        }
+
         Ok(())
     }
 }

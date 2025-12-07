@@ -80,4 +80,21 @@ mod tests {
 
         let mut quarantinier = Quarantinizer::from_db(conn).unwrap();
     }
+
+    #[test]
+    fn quarantine_store_db_test() {
+        let conn = Connection::open("/usr/local/share/sentinel/dummy/quarantined_files.db").unwrap();
+        init_db_quarantine(&conn).unwrap();
+
+        let mut quarantinier = Quarantinizer::from_db(conn).unwrap();
+        quarantinier.push_quarantined(
+            QuarantinedFile {
+                original_path: "/home/zai/shit.txt".to_string(),
+                quarantine_path: None,
+                reason: "No reason".to_string(),
+                quarantined_date: Some(Local::now()),
+            }
+        ).unwrap();
+    }
+
 }
