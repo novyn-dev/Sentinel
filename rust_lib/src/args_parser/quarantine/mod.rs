@@ -57,14 +57,14 @@ impl Quarantinizer {
                 };
 
                 quarantined_file.quarantine_path = Some(full_quarantine_file_path.to_string_lossy().to_string());
-                let mut perm = match file.metadata() {
-                    Ok(metadata) => metadata.permissions(),
-                    Err(e) => return Err(format!("Couldn't get the metadata of `{:?}`\nError: {e}", full_quarantine_file_path)),
-                };
+                let mut perm = file.metadata()
+                    .map_err(|e| format!("Couldn't get metadata of {:?}\nError: {e}", file))?
+                    .permissions();
 
                 println!("Locking {:?}", full_quarantine_file_path);
                 perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
-                fs::set_permissions(full_quarantine_file_path, perm).unwrap();
+                fs::set_permissions(full_quarantine_file_path, perm)
+                    .map_err(|e| format!("Couldn't set permissions to {:?}\nError {e}", full_quarantine_file_path))?;
 
                 println!("Locked {:?} with perms 0o000", full_quarantine_file_path);
             } else {
