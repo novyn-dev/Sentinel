@@ -40,11 +40,6 @@ impl Quarantinizer {
                 None => &quarantined_file.original_path.to_string(),
             };
 
-            let quarantine_path = match &quarantined_file.quarantine_path {
-                Some(path) => path,
-                None => quarantined_file_name,
-            };
-
             let is_quarantined = quarantined_file.quarantine_path.is_some();
             if !is_quarantined {
                 // put file in /home/user/.sentinel_quarantine/ for quarantine
