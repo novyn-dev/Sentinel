@@ -1,4 +1,4 @@
-use std::{env::home_dir, fs::{self, File}, io::{self, ErrorKind}, os::unix::fs::PermissionsExt, path::{Path, PathBuf}};
+use std::{env::home_dir, fs::{self, File}, io::ErrorKind, os::unix::fs::PermissionsExt, path::{Path, PathBuf}};
 use chrono::{DateTime, Local};
 
 pub struct QuarantinedFile {

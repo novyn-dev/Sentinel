@@ -1,9 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
-use procfs::FromRead;
 use sysinfo::System;
 use colored::*;
-use system_uptime::get_os_uptime_duration;
 
 pub struct ProcessBehaviorsAnalyzer {
     sys: System,
@@ -36,12 +34,15 @@ impl ProcessBehaviorsAnalyzer {
                     let proc_name = proc.name();
                     snapshot1.insert(pid, (stat.utime + stat.stime, proc_name.to_string_lossy()));
                 }
+            } else {
+                eprintln!("Couldn't get process {pid}");
+                continue;
             }
         }
 
         std::thread::sleep(Duration::from_secs(1));
 
-        for (pid, proc) in self.sys.processes() {
+        for pid in self.sys.processes().keys() {
             if let Ok(procfs) = procfs::process::Process::new(pid.as_u32() as i32) {
                 if let Ok(stat) = procfs.stat() {
                     if let Some((old_time, proc_name)) = snapshot1.get(pid) {
@@ -58,14 +59,19 @@ impl ProcessBehaviorsAnalyzer {
                         //         println!("[{}, {}]\nCPU USAGE: {:.2}%\nMEMORY USAGE: {:.2}%", pid.to_string().bold(), proc_name, cpu_usage, mem_usage);
                         //     };
                         // }
-                        if cpu_usage >= 20.0 {
-                            if !self.exceptions.iter().any(|e| proc_name.eq_ignore_ascii_case(e)) {
-                                println!("[{}, {}]\nCPU USAGE: {:.2}%", pid.to_string().bold(), proc_name, cpu_usage);
-                            };
-                        }
+                        if cpu_usage >= 20.0
+                        && !self.exceptions.iter().any(|e| proc_name.eq_ignore_ascii_case(e)) {
+                            println!("[{}, {}]\nCPU USAGE: {:.2}%", pid.to_string().bold(), proc_name, cpu_usage);
+                        };
 
                     }
+                } else {
+                    eprintln!("Couldn't get process stat {pid}");
+                    continue;
                 }
+            } else {
+                eprintln!("Couldn't get process {pid}");
+                continue;
             }
         }
 

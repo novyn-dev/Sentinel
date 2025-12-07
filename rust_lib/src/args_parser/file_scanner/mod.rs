@@ -3,11 +3,11 @@ use crate::args_parser::Args;
 use clap::Subcommand;
 use goblin::Object;
 use std::ffi::CString;
-use std::fs::{self, File};
+use std::fs::{self};
 use std::os::raw::c_char;
 use std::panic;
 use std::path::Path;
-use std::{env::home_dir, io::{self, Read}, path::PathBuf};
+use std::{env::home_dir, io::{self}, path::PathBuf};
 
 #[link(name = "lief_wrapper")]
 unsafe extern "C" {
@@ -74,11 +74,11 @@ pub enum FileCommands {
 }
 
 pub struct FileScanner {
-    args: Args,
+    // args: Args,
     file: PathBuf,
     show_pred: bool,
-    response_aggressiveness: Aggressiveness,
-    safety_aggressiveness: Aggressiveness,
+    // response_aggressiveness: Aggressiveness,
+    // safety_aggressiveness: Aggressiveness,
 }
 
 impl FileScanner {
@@ -93,11 +93,11 @@ impl FileScanner {
         };
 
         Self {
-            args,
+            // args,
             file,
             show_pred,
-            response_aggressiveness: Aggressiveness::Normal,
-            safety_aggressiveness: Aggressiveness::Normal,
+            // response_aggressiveness: Aggressiveness::Normal,
+            // safety_aggressiveness: Aggressiveness::Normal,
         }
     }
 

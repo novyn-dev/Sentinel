@@ -2,8 +2,8 @@ pub mod args_parser;
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, io::ErrorKind, path::PathBuf};
-    use chrono::{DateTime, Local};
+    use std::path::PathBuf;
+    use chrono::Local;
 
     use crate::args_parser::quarantine::{QuarantinedFile, Quarantinizer};
 
