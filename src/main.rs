@@ -74,12 +74,12 @@ fn main() -> io::Result<()> {
                 process_behaviors_analyzer.analyze();
             }
         }
-        Some(Quarantine { executable_file } ) => {
+        Some(Quarantine { file } ) => {
             let mut quarantinizer = Quarantinizer::new();
 
             quarantinizer.push_quarantined(
                 QuarantinedFile {
-                    original_path: executable_file.to_str().unwrap().to_string(),
+                    original_path: file.to_str().unwrap().to_string(),
                     quarantine_path: "/home/zai/.sentinel_quarantine/".to_string(),
                     reason: "No reason".to_string(),
                     quarantined_date: Some(Local::now()),
