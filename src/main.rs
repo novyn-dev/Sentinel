@@ -80,7 +80,7 @@ fn main() -> io::Result<()> {
             quarantinizer.push_quarantined(
                 QuarantinedFile {
                     original_path: executable_file.to_str().unwrap().to_string(),
-                    quarantine_path: None,
+                    quarantine_path: "/home/zai/.sentinel_quarantine/".to_string(),
                     reason: "No reason".to_string(),
                     quarantined_date: Some(Local::now()),
                 }

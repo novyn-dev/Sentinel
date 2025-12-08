@@ -5,7 +5,7 @@ use rusqlite::Connection;
 #[derive(Clone)]
 pub struct QuarantinedFile {
     pub original_path: String,
-    pub quarantine_path: Option<String>,
+    pub quarantine_path: String,
     pub reason: String,
     pub quarantined_date: Option<DateTime<Local>>,
 }
@@ -46,7 +46,7 @@ impl Quarantinizer {
             stmt.query_map([], |row| {
                 Ok(QuarantinedFile {
                     original_path: row.get(1)?,
-                    quarantine_path: row.get(2).ok(),
+                    quarantine_path: row.get(2)?,
                     reason: row.get(3)?,
                     quarantined_date: None,
                 })
@@ -63,40 +63,44 @@ impl Quarantinizer {
     }
 
     pub fn quarantine(&mut self) -> Result<(), String> {
-        for quarantined_file in &mut self.quarantined_files {
-            let original_file_name = Path::new(&quarantined_file.original_path)
-                .file_name()
-                .expect("Invalid file path")
-                .to_string_lossy();
-            let quarantined_file_name = match quarantined_file.quarantined_date {
-                Some(date) => &format!("{}_{:?}", original_file_name, date),
-                None => &quarantined_file.original_path.to_string(),
-            };
+        let db_quarantined_files = self.get_quarantined().unwrap();
 
-            let is_quarantined = quarantined_file.quarantine_path.is_some();
-            if !is_quarantined {
-                // put file in /home/user/.sentinel_quarantine/ for quarantine
-                let full_quarantine_file_path = &self.quarantine_dir.join(quarantined_file_name);
-
-                let file = match File::create_new(full_quarantine_file_path) {
-                    Ok(captured_file) => captured_file,
-                    Err(e) if e.kind() == ErrorKind::AlreadyExists => continue,
-                    Err(e) => return Err(format!("Couldn't make file `{}`\nError: {e}", quarantined_file_name))
+        for db_quarantined_file in db_quarantined_files {
+            for quarantined_file in self.quarantined_files.iter_mut() {
+                let original_file_name = Path::new(&quarantined_file.original_path)
+                    .file_name()
+                    .expect("Invalid file path")
+                    .to_string_lossy();
+                let quarantined_file_name = match quarantined_file.quarantined_date {
+                    Some(date) => &format!("{}_{:?}", original_file_name, date),
+                    None => &quarantined_file.original_path.to_string(),
                 };
 
-                quarantined_file.quarantine_path = Some(full_quarantine_file_path.to_string_lossy().to_string());
-                let mut perm = file.metadata()
-                    .map_err(|e| format!("Couldn't get metadata of {:?}\nError: {e}", file))?
-                    .permissions();
+                let is_quarantined = db_quarantined_file.quarantine_path == quarantined_file.quarantine_path;
+                if !is_quarantined {
+                    // put file in /home/user/.sentinel_quarantine/ for quarantine
+                    let full_quarantine_file_path = &self.quarantine_dir.join(quarantined_file_name);
 
-                println!("Locking {:?}", full_quarantine_file_path);
-                perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
-                fs::set_permissions(full_quarantine_file_path, perm)
-                    .map_err(|e| format!("Couldn't set permissions to {:?}\nError {e}", full_quarantine_file_path))?;
+                    let file = match File::create_new(full_quarantine_file_path) {
+                        Ok(captured_file) => captured_file,
+                        Err(e) if e.kind() == ErrorKind::AlreadyExists => continue,
+                        Err(e) => return Err(format!("Couldn't make file `{}`\nError: {e}", quarantined_file_name))
+                    };
 
-                println!("Quarantined {:?}", full_quarantine_file_path);
-            } else {
-                eprintln!("Already quarantined");
+                    quarantined_file.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
+                    let mut perm = file.metadata()
+                        .map_err(|e| format!("Couldn't get metadata of {:?}\nError: {e}", file))?
+                        .permissions();
+
+                    println!("Locking {:?}", full_quarantine_file_path);
+                    perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
+                    fs::set_permissions(full_quarantine_file_path, perm)
+                        .map_err(|e| format!("Couldn't set permissions to {:?}\nError {e}", full_quarantine_file_path))?;
+
+                    println!("Quarantined {:?}", full_quarantine_file_path);
+                } else {
+                    eprintln!("Already quarantined");
+                }
             }
         }
 
@@ -129,7 +133,7 @@ impl Quarantinizer {
                         VALUES ($1, $2, $3, $4)",
                 [
                     quarantined_clone.original_path,
-                    quarantined_clone.quarantine_path.unwrap(),
+                    quarantined_clone.quarantine_path,
                     quarantined_clone.reason,
                     quarantined_clone.quarantined_date.unwrap_or_default().to_string()
                 ]
@@ -137,5 +141,25 @@ impl Quarantinizer {
         }
 
         Ok(())
+    }
+
+    fn get_quarantined(&self) -> rusqlite::Result<Vec<QuarantinedFile>> {
+        let quarantined_files = if let Some(db) = &self.db {
+            let mut stmt = db.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files")?;
+            stmt.query_map([], |row| {
+                Ok(QuarantinedFile {
+                    original_path: row.get(1)?,
+                    quarantine_path: row.get(2)?,
+                    reason: row.get(3)?,
+                    quarantined_date: None,
+                })
+            })?
+            .filter_map(|result| result.ok())
+            .collect::<Vec<QuarantinedFile>>()
+        } else {
+            vec![]
+        };
+
+        Ok(quarantined_files)
     }
 }

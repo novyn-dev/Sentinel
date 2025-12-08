@@ -56,7 +56,7 @@ mod tests {
         let result = quarantinizer.push_quarantined(
             QuarantinedFile {
                 original_path: "/home/zai/sigma.txt".to_string(),
-                quarantine_path: None,
+                quarantine_path: "/home/zai/.sentinel_quarantine/".to_string(),
                 reason: "No reason".to_string(),
                 quarantined_date: Some(Local::now()),
             }
@@ -65,8 +65,7 @@ mod tests {
 
         let file = quarantinizer.quarantined_files.first()
             .expect("No quarantined files found");
-        let path = file.quarantine_path.as_ref()
-            .expect("File has no quarantine path");
+        let path = file.quarantine_path.clone();
         assert!(path.starts_with("/home/zai/.sentinel_quarantine/"));
 
         let result = quarantinizer.quarantine();
@@ -90,7 +89,7 @@ mod tests {
         quarantinier.push_quarantined(
             QuarantinedFile {
                 original_path: "/home/zai/shit.txt".to_string(),
-                quarantine_path: None,
+                quarantine_path: "/home/zai/.sentinel_quarantine/".to_string(),
                 reason: "No reason".to_string(),
                 quarantined_date: Some(Local::now()),
             }
