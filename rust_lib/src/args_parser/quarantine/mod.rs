@@ -64,6 +64,7 @@ impl Quarantinizer {
 
     pub fn quarantine(&mut self) -> Result<(), String> {
         let db_quarantined_files = self.get_quarantined().unwrap();
+        let mut is_quarantined: bool = false;
 
         for db_quarantined_file in db_quarantined_files {
             for quarantined_file in self.quarantined_files.iter_mut() {
@@ -72,30 +73,34 @@ impl Quarantinizer {
                     .expect("Invalid file path")
                     .to_string_lossy();
                 let quarantined_file_name = match quarantined_file.quarantined_date {
-                    Some(date) => &format!("{}_{:?}", original_file_name, date),
-                    None => &quarantined_file.original_path.to_string(),
+                    Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
+                    None => original_file_name.to_string(),
                 };
+                println!("{quarantined_file_name}");
 
-                let is_quarantined = db_quarantined_file.quarantine_path == quarantined_file.quarantine_path;
+                is_quarantined = db_quarantined_file.quarantine_path == quarantined_file.quarantine_path;
                 if !is_quarantined {
+                    println!("Is not quarantined. Quarantine in process");
                     // put file in /home/user/.sentinel_quarantine/ for quarantine
-                    let full_quarantine_file_path = &self.quarantine_dir.join(quarantined_file_name);
+                    let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
+                    println!("{full_quarantine_file_path:?}");
 
-                    let file = match File::create_new(full_quarantine_file_path) {
+                    let file = match File::create_new(&full_quarantine_file_path) {
                         Ok(captured_file) => captured_file,
                         Err(e) if e.kind() == ErrorKind::AlreadyExists => continue,
-                        Err(e) => return Err(format!("Couldn't make file `{}`\nError: {e}", quarantined_file_name))
+                        Err(e) => return Err(format!("Couldn't make file `{}`\nError: {e}", &quarantined_file_name))
                     };
 
                     quarantined_file.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
+
                     let mut perm = file.metadata()
                         .map_err(|e| format!("Couldn't get metadata of {:?}\nError: {e}", file))?
                         .permissions();
 
                     println!("Locking {:?}", full_quarantine_file_path);
                     perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
-                    fs::set_permissions(full_quarantine_file_path, perm)
-                        .map_err(|e| format!("Couldn't set permissions to {:?}\nError {e}", full_quarantine_file_path))?;
+                    fs::set_permissions(&full_quarantine_file_path, perm)
+                        .map_err(|e| format!("Couldn't set permissions to {:?}\nError {e}", &full_quarantine_file_path))?;
 
                     println!("Quarantined {:?}", full_quarantine_file_path);
                 } else {
@@ -106,12 +111,17 @@ impl Quarantinizer {
 
         // after all that quaranting, store it to the db
         for quarantined_file in &self.quarantined_files {
-            self.store_quarantined(quarantined_file).unwrap();
+            if !is_quarantined {
+                self.store_quarantined(quarantined_file).unwrap();
+            } else {
+                println!("Stored into quarantine db");
+            }
         }
 
         Ok(())
     }
 
+    /// Pushing a quarantined file will immediately trigger the `quarantine()` function again
     pub fn push_quarantined(&mut self, quarantined: QuarantinedFile) -> Result<(), String> {
         // old files, just in case everything fails
         let old_files = self.quarantined_files.clone();
