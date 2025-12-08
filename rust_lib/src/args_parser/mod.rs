@@ -55,6 +55,6 @@ pub enum Commands {
     AnalyzeProcessBehaviors,
     Quarantine {
         #[arg(short, long)]
-        executable_file: PathBuf
+        file: PathBuf
     },
 }
