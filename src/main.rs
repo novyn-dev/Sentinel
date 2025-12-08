@@ -77,7 +77,7 @@ fn main() -> io::Result<()> {
             }
         }
         Some(Quarantine { file } ) => {
-            let mut quarantinizer = Quarantinizer::new();
+            let mut quarantinizer = Quarantinizer::from_db(conn_quarantine).unwrap();
 
             quarantinizer.push_quarantined(
                 QuarantinedFile {
