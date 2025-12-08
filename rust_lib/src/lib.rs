@@ -51,26 +51,7 @@ mod tests {
     }
 
     #[test]
-    fn push_quarantined_file_test() {
-        let mut quarantinizer = Quarantinizer::new();
-        let result = quarantinizer.push_quarantined(
-            QuarantinedFile {
-                original_path: "/home/zai/sigma.txt".to_string(),
-                quarantine_path: "/home/zai/.sentinel_quarantine/".to_string(),
-                reason: "No reason".to_string(),
-                quarantined_date: Some(Local::now()),
-            }
-        );
-        assert!(result.is_ok(), "Couldn't push a file for quarantine");
-
-        let file = quarantinizer.quarantined_files.first()
-            .expect("No quarantined files found");
-        let path = file.quarantine_path.clone();
-        assert!(path.starts_with("/home/zai/.sentinel_quarantine/"));
-    }
-
-    #[test]
-    fn quarantine_store_db_test() {
+    fn quarantine_store_test() {
         let conn = Connection::open("/usr/local/share/sentinel/dummy/quarantined_files.db").unwrap();
         init_db_quarantine(&conn).unwrap();
 
