@@ -1,6 +1,6 @@
 use std::{env::home_dir, fs::{self, File}, io::ErrorKind, os::unix::fs::PermissionsExt, path::{Path, PathBuf}};
 use chrono::{DateTime, Local};
-use rusqlite::Connection;
+use rusqlite::{Connection, ffi::Error};
 
 #[derive(Clone)]
 pub struct QuarantinedFile {
@@ -74,7 +74,9 @@ impl Quarantinizer {
                 Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
                 None => original_file_name.to_string(),
             };
-            println!("{quarantined_file_name}");
+            // println!("{quarantined_file_name}");
+            let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
+            qf.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
 
             let mut is_quarantined: bool = false;
             for db_qf in db_quarantined_files.iter() {
@@ -83,16 +85,15 @@ impl Quarantinizer {
                     break;
                 }
             }
-            println!("is_quarantined: {is_quarantined}");
+            // println!("is_quarantined: {is_quarantined}");
             if !is_quarantined {
                 println!("Is not quarantined. Quarantine in process");
                 // put file in /home/user/.sentinel_quarantine/ for quarantine
-                let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
-                println!("{full_quarantine_file_path:?}");
-
-                println!("About to create: {}", full_quarantine_file_path.display());
-                println!("Parent exists: {}", full_quarantine_file_path.parent().unwrap().exists());
-                println!("Dir perms: {:?}", fs::metadata(full_quarantine_file_path.parent().unwrap()));
+                // println!("{full_quarantine_file_path:?}");
+                //
+                // println!("About to create: {}", full_quarantine_file_path.display());
+                // println!("Parent exists: {}", full_quarantine_file_path.parent().unwrap().exists());
+                // println!("Dir perms: {:?}", fs::metadata(full_quarantine_file_path.parent().unwrap()));
 
                 let file = match File::create(&full_quarantine_file_path) {
                     Ok(captured_file) => captured_file,
@@ -101,8 +102,6 @@ impl Quarantinizer {
                         return Err(format!("Creation failed for {:?}: {e}", full_quarantine_file_path));
                     }
                 };
-
-                qf.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
 
                 let mut perm = file.metadata()
                     .unwrap_or_else(|e| panic!("Couldn't get metadata of {:?}\nError: {e}", file))
@@ -149,20 +148,36 @@ impl Quarantinizer {
     }
 
     fn store_quarantined(&self, quarantined: &QuarantinedFile) -> rusqlite::Result<()> {
-        if let Some(db) = &self.db {
-            let quarantined_clone  = quarantined.clone();
-            db.execute(
-                "INSERT INTO quarantined_files (original_path, quarantine_path, reason, quarantined_date)
-                        VALUES ($1, $2, $3, $4)",
-                [
-                    quarantined_clone.original_path,
-                    quarantined_clone.quarantine_path,
-                    quarantined_clone.reason,
-                    quarantined_clone.quarantined_date.unwrap_or_default().to_string()
-                ]
-            )?;
-        }
+        for qf in &self.quarantined_files {
+            let original_file_name = Path::new(&qf.original_path)
+                .file_name()
+                .expect("Invalid file path")
+                .to_string_lossy();
 
+            let quarantined_file_name = match qf.quarantined_date {
+                Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
+                None => original_file_name.to_string(),
+            };
+
+            let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
+
+            // (i, self.quarantine_dir.join(&quarantined_file_name))
+            let quarantined_clone  = quarantined.clone();
+            match &self.db {
+                Some(db) => {
+                    db.execute(
+                    "INSERT INTO quarantined_files (original_path, quarantine_path, reason, quarantined_date)
+                            VALUES ($1, $2, $3, $4)",
+                    [
+                        quarantined_clone.original_path,
+                        full_quarantine_file_path.to_string_lossy().to_string(),
+                        quarantined_clone.reason,
+                        quarantined_clone.quarantined_date.unwrap_or_default().to_string()
+                    ])?;
+                }
+                None => panic!("Couldn't load database! Is this database created or initialized?")
+            }
+        }
         Ok(())
     }
 
