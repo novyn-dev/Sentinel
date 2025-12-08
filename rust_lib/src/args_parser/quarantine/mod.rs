@@ -64,59 +64,70 @@ impl Quarantinizer {
 
     pub fn quarantine(&mut self) -> Result<(), String> {
         let db_quarantined_files = self.get_quarantined().unwrap();
-        let mut is_quarantined: bool = false;
 
-        for db_quarantined_file in db_quarantined_files {
-            for quarantined_file in self.quarantined_files.iter_mut() {
-                let original_file_name = Path::new(&quarantined_file.original_path)
-                    .file_name()
-                    .expect("Invalid file path")
-                    .to_string_lossy();
-                let quarantined_file_name = match quarantined_file.quarantined_date {
-                    Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
-                    None => original_file_name.to_string(),
-                };
-                println!("{quarantined_file_name}");
+        for qf in self.quarantined_files.iter_mut() {
+            let original_file_name = Path::new(&qf.original_path)
+                .file_name()
+                .expect("Invalid file path")
+                .to_string_lossy();
+            let quarantined_file_name = match qf.quarantined_date {
+                Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
+                None => original_file_name.to_string(),
+            };
+            println!("{quarantined_file_name}");
 
-                is_quarantined = db_quarantined_file.quarantine_path == quarantined_file.quarantine_path;
-                if !is_quarantined {
-                    println!("Is not quarantined. Quarantine in process");
-                    // put file in /home/user/.sentinel_quarantine/ for quarantine
-                    let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
-                    println!("{full_quarantine_file_path:?}");
-
-                    let file = match File::create_new(&full_quarantine_file_path) {
-                        Ok(captured_file) => captured_file,
-                        Err(e) if e.kind() == ErrorKind::AlreadyExists => continue,
-                        Err(e) => return Err(format!("Couldn't make file `{}`\nError: {e}", &quarantined_file_name))
-                    };
-
-                    quarantined_file.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
-
-                    let mut perm = file.metadata()
-                        .map_err(|e| format!("Couldn't get metadata of {:?}\nError: {e}", file))?
-                        .permissions();
-
-                    println!("Locking {:?}", full_quarantine_file_path);
-                    perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
-                    fs::set_permissions(&full_quarantine_file_path, perm)
-                        .map_err(|e| format!("Couldn't set permissions to {:?}\nError {e}", &full_quarantine_file_path))?;
-
-                    println!("Quarantined {:?}", full_quarantine_file_path);
-                } else {
-                    eprintln!("Already quarantined");
+            let mut is_quarantined: bool = false;
+            for db_qf in db_quarantined_files.iter() {
+                if db_qf.quarantine_path == qf.quarantine_path {
+                    is_quarantined = true;
+                    break;
                 }
+            }
+            println!("is_quarantined: {is_quarantined}");
+            if !is_quarantined {
+                println!("Is not quarantined. Quarantine in process");
+                // put file in /home/user/.sentinel_quarantine/ for quarantine
+                let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
+                println!("{full_quarantine_file_path:?}");
+
+                println!("About to create: {}", full_quarantine_file_path.display());
+                println!("Parent exists: {}", full_quarantine_file_path.parent().unwrap().exists());
+                println!("Dir perms: {:?}", fs::metadata(full_quarantine_file_path.parent().unwrap()));
+
+                let file = match File::create(&full_quarantine_file_path) {
+                    Ok(captured_file) => captured_file,
+                    Err(e) => {
+                        println!("CREATE FAILED: {e}");
+                        return Err(format!("Creation failed for {:?}: {e}", full_quarantine_file_path));
+                    }
+                };
+
+                qf.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
+
+                let mut perm = file.metadata()
+                    .unwrap_or_else(|e| panic!("Couldn't get metadata of {:?}\nError: {e}", file))
+                    .permissions();
+
+                println!("Locking {:?}", full_quarantine_file_path);
+                perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
+                fs::set_permissions(&full_quarantine_file_path, perm)
+                    .unwrap_or_else(|e| panic!("Couldn't set permissions to {:?}\nError {e}", &full_quarantine_file_path));
+
+                println!("Quarantined {:?}", full_quarantine_file_path);
+            } else {
+                eprintln!("Already quarantined");
+                continue;
             }
         }
 
         // after all that quaranting, store it to the db
-        for quarantined_file in &self.quarantined_files {
-            if !is_quarantined {
-                self.store_quarantined(quarantined_file).unwrap();
-            } else {
-                println!("Stored into quarantine db");
-            }
-        }
+        // for quarantined_file in &self.quarantined_files {
+        //     if !is_quarantined {
+        //         self.store_quarantined(quarantined_file).unwrap();
+        //     } else {
+        //         println!("Stored into quarantine db");
+        //     }
+        // }
 
         Ok(())
     }
@@ -125,13 +136,15 @@ impl Quarantinizer {
     pub fn push_quarantined(&mut self, quarantined: QuarantinedFile) -> Result<(), String> {
         // old files, just in case everything fails
         let old_files = self.quarantined_files.clone();
-        self.quarantined_files.push(quarantined);
+        self.quarantined_files.push(quarantined.clone());
 
         // quarantine again
         if let Err(e) = self.quarantine() {
             self.quarantined_files = old_files;
             return Err(format!("Couldn't quarantine the files\nError: {e}"));
         }
+
+        self.store_quarantined(&quarantined.clone()).unwrap();
         Ok(())
     }
 

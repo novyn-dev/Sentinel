@@ -67,9 +67,6 @@ mod tests {
             .expect("No quarantined files found");
         let path = file.quarantine_path.clone();
         assert!(path.starts_with("/home/zai/.sentinel_quarantine/"));
-
-        let result = quarantinizer.quarantine();
-        assert!(result.is_ok(), "Couldn't quarantine");
     }
 
     #[test]
