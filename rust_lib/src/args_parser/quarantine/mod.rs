@@ -33,7 +33,7 @@ impl Quarantinizer {
         }
     }
 
-    pub fn from_db(conn: Connection) -> rusqlite::Result<Self, rusqlite::Error> {
+    pub fn from_db(conn: Connection) -> rusqlite::Result<Self> {
         let quarantine_dir = home_dir()
             .map(|h| h.join(".sentinel_quarantine"))
             .ok_or("Couldn't determine home directory")
@@ -109,10 +109,15 @@ impl Quarantinizer {
     }
 
     pub fn push_quarantined(&mut self, quarantined: QuarantinedFile) -> Result<(), String> {
+        // old files, just in case everything fails
+        let old_files = self.quarantined_files.clone();
         self.quarantined_files.push(quarantined);
 
         // quarantine again
-        self.quarantine()?;
+        if let Err(e) = self.quarantine() {
+            self.quarantined_files = old_files;
+            return Err(format!("Couldn't quarantine the files\nError: {e}"));
+        }
         Ok(())
     }
 
