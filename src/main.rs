@@ -51,7 +51,9 @@ fn main() -> io::Result<()> {
     let args = Args::parse();
 
     let conn_passwd = Connection::open("/usr/local/share/sentinel/passwd.db").unwrap();
-    init_db_passwd(&conn_passwd).expect("Couldn't initialize database");
+    let conn_quarantine = Connection::open("/usr/local/share/sentinel/quarantined_files.db").unwrap();
+    init_db_passwd(&conn_passwd).expect("Couldn't initialize database for passwd");
+    init_db_quarantine(&conn_quarantine).expect("Couldn't initialize database for quarantine");
 
     match args.clone().command {
         Some(ScanDir { .. }) => {
