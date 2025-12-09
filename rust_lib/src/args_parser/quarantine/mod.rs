@@ -70,17 +70,16 @@ impl Quarantinizer {
                 .file_name()
                 .expect("Invalid file path")
                 .to_string_lossy();
-            let quarantined_file_name = match qf.quarantined_date {
-                Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
-                None => format!("{}_{}", original_file_name, Local::now().format("%Y%m%d%H%M%S")),
-            };
+            let quarantine_file_path = self.quarantine_dir.join(&*original_file_name);
+
+            let quarantined_file_name = format!("{}_{}", original_file_name, Local::now().format("%Y%m%d%H%M%S"));
             // println!("{quarantined_file_name}");
             let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
-            qf.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
+            qf.quarantine_path = quarantine_file_path.to_string_lossy().to_string();
 
             let is_quarantined = db_quarantined_files
                 .iter()
-                .any(|db_qf| db_qf.quarantine_path == qf.quarantine_path);
+                .any(|db_qf| db_qf.quarantine_path.starts_with(&*quarantine_file_path.to_string_lossy()));
             // println!("is_quarantined: {is_quarantined}");
             if !is_quarantined {
                 println!("Is not quarantined. Quarantine in process");
@@ -150,11 +149,7 @@ impl Quarantinizer {
                 .expect("Invalid file path")
                 .to_string_lossy();
 
-            let quarantined_file_name = match qf.quarantined_date {
-                Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
-                None => original_file_name.to_string(),
-            };
-
+            let quarantined_file_name = format!("{}_{}", original_file_name, Local::now().format("%Y%m%d%H%M%S"));
             let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
 
             // (i, self.quarantine_dir.join(&quarantined_file_name))
