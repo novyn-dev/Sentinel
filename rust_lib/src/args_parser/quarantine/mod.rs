@@ -107,7 +107,7 @@ impl Quarantinizer {
                     .unwrap_or_else(|e| panic!("Couldn't get metadata of {:?}\nError: {e}", file))
                     .permissions();
 
-                println!("Locking {:?}", full_quarantine_file_path);
+                println!("Locking {:?}", original_file_name);
                 perm.set_mode(0o000); // lock it. even for the user, except root can change it soo yeah
                 fs::set_permissions(&full_quarantine_file_path, perm)
                     .unwrap_or_else(|e| panic!("Couldn't set permissions to {:?}\nError {e}", &full_quarantine_file_path));
