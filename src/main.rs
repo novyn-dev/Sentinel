@@ -6,7 +6,7 @@ use chrono::Local;
 use clap::Parser;
 use colored::Colorize;
 use rust_lib::args_parser::process_behaviors_analyzer::ProcessBehaviorsAnalyzer;
-use rust_lib::args_parser::quarantine::{QuarantinedFile, Quarantinizer};
+use rust_lib::args_parser::quarantine::{QuarantinedFile, Quarantinizer, ViewMode};
 use rust_lib::args_parser::unauthorized_changes_scanner::UnauthorizedChangesScanner;
 use rust_lib::args_parser::{file_scanner::FileScanner, Args};
 use rust_lib::args_parser::Commands::{ScanDir, CheckUnauthorizedChanges, AnalyzeProcessBehaviors, Quarantine};
@@ -84,7 +84,15 @@ fn main() -> io::Result<()> {
             let mut quarantinizer = Quarantinizer::from_db(conn_quarantine).unwrap();
             let quarantine_path = home_dir.join(".sentinel_quarantine");
             if view {
-                
+                let maybe_files = match view_mode {
+                    ViewMode::Database => quarantinizer.get_quarantined(),
+                    _ => todo!()
+                };
+                if let Ok(files) = maybe_files {
+                    // specifically, quarantined file paths
+                    let paths = files.iter().map(|f| f.quarantine_path.clone()).collect::<Vec<String>>();
+                    println!("{:?}", paths);
+                }
             } else {
                 quarantinizer.push_quarantined(
                     QuarantinedFile {
