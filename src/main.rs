@@ -1,3 +1,5 @@
+use std::env::home_dir;
+use std::path::PathBuf;
 use std::time::Duration;
 use std::{io, panic, process};
 use chrono::Local;
@@ -48,6 +50,8 @@ fn main() -> io::Result<()> {
         process::exit(1);
     }));
 
+    let home_dir = home_dir().unwrap_or(PathBuf::from("/tmp"));
+
     let args = Args::parse();
 
     let conn_passwd = Connection::open("/usr/local/share/sentinel/passwd.db").unwrap();
@@ -76,17 +80,21 @@ fn main() -> io::Result<()> {
                 process_behaviors_analyzer.analyze();
             }
         }
-        Some(Quarantine { file, .. } ) => {
-            let mut quarantinizer = Quarantinizer::from_db(args, conn_quarantine).unwrap();
+        Some(Quarantine { file, view } ) => {
+            let mut quarantinizer = Quarantinizer::from_db(conn_quarantine).unwrap();
+            let quarantine_path = home_dir.join(".sentinel_quarantine");
+            if view {
 
-            quarantinizer.push_quarantined(
-                QuarantinedFile {
-                    original_path: file.to_str().unwrap().to_string(),
-                    quarantine_path: "/home/zai/.sentinel_quarantine/".to_string(),
-                    reason: "No reason".to_string(),
-                    quarantined_date: Some(Local::now()),
-                }
-            ).unwrap();
+            } else {
+                quarantinizer.push_quarantined(
+                    QuarantinedFile {
+                        original_path: file.unwrap().to_str().unwrap().to_string(),
+                        quarantine_path: quarantine_path.to_string_lossy().to_string(),
+                        reason: "No reason".to_string(),
+                        quarantined_date: Some(Local::now()),
+                    }
+                ).unwrap();
+            }
         }
         None => {
             panic!("Please enter a command")
