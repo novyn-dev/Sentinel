@@ -72,19 +72,15 @@ impl Quarantinizer {
                 .to_string_lossy();
             let quarantined_file_name = match qf.quarantined_date {
                 Some(date) => format!("{}_{}", original_file_name, date.format("%Y%m%d%H%M%S")),
-                None => original_file_name.to_string(),
+                None => format!("{}_{}", original_file_name, Local::now().format("%Y%m%d%H%M%S")),
             };
             // println!("{quarantined_file_name}");
             let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
             qf.quarantine_path = full_quarantine_file_path.to_string_lossy().to_string();
 
-            let mut is_quarantined: bool = false;
-            for db_qf in db_quarantined_files.iter() {
-                if db_qf.quarantine_path == qf.quarantine_path {
-                    is_quarantined = true;
-                    break;
-                }
-            }
+            let is_quarantined = db_quarantined_files
+                .iter()
+                .any(|db_qf| db_qf.quarantine_path == qf.quarantine_path);
             // println!("is_quarantined: {is_quarantined}");
             if !is_quarantined {
                 println!("Is not quarantined. Quarantine in process");
