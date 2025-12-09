@@ -93,7 +93,10 @@ fn main() -> io::Result<()> {
                 if let Some(files) = maybe_files {
                     // specifically, quarantined file paths
                     let paths = files.iter().map(|f| f.quarantine_path.clone()).collect::<Vec<String>>();
-                    println!("{:?}", paths);
+
+                    for (i, path) in paths.iter().enumerate() {
+                        println!("{} {path}", format!("File {i}").bold());
+                    }
                 }
             } else {
                 quarantinizer.push_quarantined(
