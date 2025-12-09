@@ -80,11 +80,11 @@ fn main() -> io::Result<()> {
                 process_behaviors_analyzer.analyze();
             }
         }
-        Some(Quarantine { file, view } ) => {
+        Some(Quarantine { file, view, view_mode } ) => {
             let mut quarantinizer = Quarantinizer::from_db(conn_quarantine).unwrap();
             let quarantine_path = home_dir.join(".sentinel_quarantine");
             if view {
-
+                
             } else {
                 quarantinizer.push_quarantined(
                     QuarantinedFile {

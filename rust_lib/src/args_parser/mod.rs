@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-use crate::args_parser::file_scanner::FileCommands;
+use crate::args_parser::{file_scanner::FileCommands, quarantine::ViewMode};
 
 // #[derive(Debug, Clone, Copy)]
 // pub enum Platform {
@@ -55,9 +55,12 @@ pub enum Commands {
     AnalyzeProcessBehaviors,
     Quarantine {
         #[arg(short, long, required_unless_present="view")]
-        file: PathBuf,
+        file: Option<PathBuf>,
 
         #[arg(short, long, default_value_t=false)]
         view: bool,
+
+        #[arg(short, long)]
+        view_mode: ViewMode
     },
 }
