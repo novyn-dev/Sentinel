@@ -57,10 +57,10 @@ pub enum Commands {
         #[arg(short, long, required_unless_present="view")]
         file: Option<PathBuf>,
 
-        #[arg(short, long, default_value_t=false)]
+        #[arg(long)]
         view: bool,
 
-        #[arg(short, long)]
+        #[arg(long)]
         view_mode: ViewMode
     },
 }
