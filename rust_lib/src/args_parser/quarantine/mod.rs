@@ -66,6 +66,10 @@ impl Quarantinizer {
         let db_quarantined_files = self.get_quarantined().unwrap();
         let mut is_quarantined: bool = false;
 
+        // dedup initialization
+        self.quarantined_files.sort_by(|a, b| a.original_path.cmp(&b.original_path));
+        self.quarantined_files.dedup_by(|a, b| a.original_path == b.original_path);
+
         for qf in self.quarantined_files.iter_mut() {
             let original_file_name = Path::new(&qf.original_path)
                 .file_name()
@@ -111,7 +115,6 @@ impl Quarantinizer {
                 println!("Quarantined {:?}", full_quarantine_file_path);
             } else {
                 eprintln!("Already quarantined");
-                continue;
             }
         }
 
