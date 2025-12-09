@@ -86,7 +86,7 @@ fn main() -> io::Result<()> {
             if view {
                 let maybe_files = match view_mode {
                     ViewMode::Database => quarantinizer.get_quarantined_files(),
-                    ViewMode::Local => quarantinizer.get_local_files(quarantine_path),
+                    ViewMode::Local => quarantinizer.get_local_files(&quarantine_path),
                     _ => todo!()
                 };
                 if let Ok(files) = maybe_files {
