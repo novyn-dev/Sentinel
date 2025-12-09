@@ -138,8 +138,8 @@ jobs:
 
     - name: Copy binary
       run: |
-        BINARY_NAME="sentinel_src"
-        [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ] && BINARY_NAME="sentinel_src.exe"
+        BINARY_NAME="sentinel"
+        [ "${{ matrix.target }}" = "x86_64-pc-windows-gnu" ] && BINARY_NAME="sentinel.exe"
         cp target/${{ matrix.target }}/release/$BINARY_NAME artifacts/
 
     - name: Generate SHA256 checksums
