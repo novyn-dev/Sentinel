@@ -25,7 +25,7 @@ impl std::str::FromStr for ViewMode {
 }
 
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct QuarantinedFile {
     pub original_path: String,
     pub quarantine_path: String,
@@ -196,7 +196,7 @@ impl Quarantinizer {
         Ok(())
     }
 
-    fn get_quarantined(&self) -> rusqlite::Result<Vec<QuarantinedFile>> {
+    pub fn get_quarantined(&self) -> rusqlite::Result<Vec<QuarantinedFile>> {
         let quarantined_files = if let Some(db) = &self.db {
             let mut stmt = db.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files")?;
             stmt.query_map([], |row| {
