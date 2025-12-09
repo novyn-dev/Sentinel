@@ -87,7 +87,7 @@ impl Quarantinizer {
     }
 
     pub fn quarantine(&mut self) -> Result<(), String> {
-        let db_quarantined_files = self.get_quarantined().unwrap();
+        let db_quarantined_files = self.get_quarantined_files().unwrap();
         let mut is_quarantined: bool = false;
 
         // dedup initialization
@@ -196,7 +196,7 @@ impl Quarantinizer {
         Ok(())
     }
 
-    pub fn get_quarantined(&self) -> rusqlite::Result<Vec<QuarantinedFile>> {
+    pub fn get_quarantined_files(&self) -> rusqlite::Result<Vec<QuarantinedFile>> {
         let quarantined_files = if let Some(db) = &self.db {
             let mut stmt = db.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files")?;
             stmt.query_map([], |row| {
@@ -214,5 +214,26 @@ impl Quarantinizer {
         };
 
         Ok(quarantined_files)
+    }
+
+    pub fn get_local_files(&self, quarantine_path: &PathBuf) -> Result<Vec<QuarantinedFile>, String> {
+        let mut local_files = vec![];
+        for entry in fs::read_dir(quarantine_path).unwrap().flatten() {
+            let original_path = entry.path();
+
+            // pretty confidenct next_back wont return a none
+            let original_file_name = original_path.iter().next_back().unwrap();
+            let quarantine_path_file = quarantine_path.join(original_file_name);
+
+            local_files.push(
+                QuarantinedFile {
+                    original_path: original_path.to_string_lossy().to_string(),
+                    quarantine_path: quarantine_path_file.to_string_lossy().to_string(),
+                    reason: "Local Files shiii".to_string(),
+                    quarantined_date: None,
+                }
+            )
+        }
+        Ok(local_files)
     }
 }

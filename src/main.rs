@@ -85,7 +85,8 @@ fn main() -> io::Result<()> {
             let quarantine_path = home_dir.join(".sentinel_quarantine");
             if view {
                 let maybe_files = match view_mode {
-                    ViewMode::Database => quarantinizer.get_quarantined(),
+                    ViewMode::Database => quarantinizer.get_quarantined_files(),
+                    ViewMode::Local => quarantinizer.get_local_files(quarantine_path),
                     _ => todo!()
                 };
                 if let Ok(files) = maybe_files {
