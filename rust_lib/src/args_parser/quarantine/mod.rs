@@ -196,9 +196,9 @@ impl Quarantinizer {
         Ok(())
     }
 
-    pub fn get_quarantined_files(&self) -> rusqlite::Result<Vec<QuarantinedFile>> {
+    pub fn get_quarantined_files(&self) -> Result<Vec<QuarantinedFile>, String> {
         let quarantined_files = if let Some(db) = &self.db {
-            let mut stmt = db.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files")?;
+            let mut stmt = db.prepare("SELECT id, original_path, quarantine_path, reason, quarantined_date FROM quarantined_files").unwrap();
             stmt.query_map([], |row| {
                 Ok(QuarantinedFile {
                     original_path: row.get(1)?,
@@ -206,7 +206,7 @@ impl Quarantinizer {
                     reason: row.get(3)?,
                     quarantined_date: None,
                 })
-            })?
+            }).unwrap()
             .filter_map(|result| result.ok())
             .collect::<Vec<QuarantinedFile>>()
         } else {
