@@ -64,6 +64,7 @@ impl Quarantinizer {
 
     pub fn quarantine(&mut self) -> Result<(), String> {
         let db_quarantined_files = self.get_quarantined().unwrap();
+        let mut is_quarantined: bool = false;
 
         for qf in self.quarantined_files.iter_mut() {
             let original_file_name = Path::new(&qf.original_path)
@@ -77,7 +78,7 @@ impl Quarantinizer {
             let full_quarantine_file_path = self.quarantine_dir.join(&quarantined_file_name);
             qf.quarantine_path = quarantine_file_path.to_string_lossy().to_string();
 
-            let is_quarantined = db_quarantined_files
+            is_quarantined = db_quarantined_files
                 .iter()
                 .any(|db_qf| db_qf.quarantine_path.starts_with(&*quarantine_file_path.to_string_lossy()));
             // println!("is_quarantined: {is_quarantined}");
@@ -115,13 +116,11 @@ impl Quarantinizer {
         }
 
         // after all that quaranting, store it to the db
-        // for quarantined_file in &self.quarantined_files {
-        //     if !is_quarantined {
-        //         self.store_quarantined(quarantined_file).unwrap();
-        //     } else {
-        //         println!("Stored into quarantine db");
-        //     }
-        // }
+        for quarantined_file in &self.quarantined_files {
+            if !is_quarantined {
+                self.store_quarantined(quarantined_file).unwrap();
+            }
+        }
 
         Ok(())
     }
@@ -137,8 +136,6 @@ impl Quarantinizer {
             self.quarantined_files = old_files;
             return Err(format!("Couldn't quarantine the files\nError: {e}"));
         }
-
-        self.store_quarantined(&quarantined.clone()).unwrap();
         Ok(())
     }
 
