@@ -54,7 +54,10 @@ pub enum Commands {
     },
     AnalyzeProcessBehaviors,
     Quarantine {
-        #[arg(short, long)]
-        file: PathBuf
+        #[arg(short, long, required_unless_present="view")]
+        file: PathBuf,
+
+        #[arg(short, long, default_value_t=false)]
+        view: bool,
     },
 }

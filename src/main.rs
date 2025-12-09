@@ -76,8 +76,8 @@ fn main() -> io::Result<()> {
                 process_behaviors_analyzer.analyze();
             }
         }
-        Some(Quarantine { file } ) => {
-            let mut quarantinizer = Quarantinizer::from_db(conn_quarantine).unwrap();
+        Some(Quarantine { file, .. } ) => {
+            let mut quarantinizer = Quarantinizer::from_db(args, conn_quarantine).unwrap();
 
             quarantinizer.push_quarantined(
                 QuarantinedFile {

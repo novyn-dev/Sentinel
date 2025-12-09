@@ -2,6 +2,8 @@ use std::{env::home_dir, fs::{self, File, OpenOptions}, io::ErrorKind, os::unix:
 use chrono::{DateTime, Local};
 use rusqlite::{Connection, ffi::Error};
 
+use crate::args_parser::Args;
+
 #[derive(Clone)]
 pub struct QuarantinedFile {
     pub original_path: String,
@@ -15,25 +17,35 @@ pub struct Quarantinizer {
     pub quarantined_files: Vec<QuarantinedFile>,
 
     db: Option<Connection>,
+
+    view_files: bool,
 }
 
 #[allow(clippy::new_without_default)]
 impl Quarantinizer {
-    pub fn new() -> Self {
+    pub fn new(args: Args) -> Self {
         let quarantine_dir = home_dir()
             .map(|h| h.join(".sentinel_quarantine"))
             .ok_or("Couldn't determine home directory")
             .unwrap();
         fs::create_dir_all(&quarantine_dir)
             .unwrap_or_else(|e| println!("Couldn't create {}\nError {e}", quarantine_dir.to_string_lossy()));
+
+        let commands = args.command.unwrap();
+        let view_files = match commands {
+            crate::args_parser::Commands::Quarantine { view, .. } => view,
+            _ => panic!("How did you even get here..?")
+        };
+
         Self {
             quarantine_dir,
             quarantined_files: vec![],
             db: None,
+            view_files
         }
     }
 
-    pub fn from_db(conn: Connection) -> rusqlite::Result<Self> {
+    pub fn from_db(args: Args, conn: Connection) -> rusqlite::Result<Self> {
         let quarantine_dir = home_dir()
             .map(|h| h.join(".sentinel_quarantine"))
             .ok_or("Couldn't determine home directory")
@@ -55,10 +67,17 @@ impl Quarantinizer {
             .collect::<Vec<QuarantinedFile>>()
         };
 
+        let commands = args.command.unwrap();
+        let view_files = match commands {
+            crate::args_parser::Commands::Quarantine { view, .. } => view,
+            _ => panic!("How did you even get here..?")
+        };
+
         Ok(Self {
             quarantine_dir,
             quarantined_files,
             db: Some(conn),
+            view_files
         })
     }
 
