@@ -60,7 +60,7 @@ pub enum Commands {
         #[arg(long)]
         view: bool,
 
-        #[arg(long)]
-        view_mode: ViewMode
+        #[arg(long, required_unless_present="file")]
+        view_mode: Option<ViewMode>
     },
 }
